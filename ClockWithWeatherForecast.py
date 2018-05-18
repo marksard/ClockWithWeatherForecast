@@ -20,31 +20,27 @@ class QCustomLabel(QLabel):
         super(QCustomLabel, self).__init__(text)
 
         self.font = QFont('源ノ角ゴシック Code JP N', 11)
+        # self.font = QFont('Digital-7', 11)
 
         self.setFont(self.font)
         self.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
-        self.setContentsMargins(-2, -2, -2, -2)
+        self.setContentsMargins(-5, -5, -5, -5)
         self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        self.SizePolicyEz(2, 1)
+        self.fontScale = 1.0
 
-    # def setFontSize(self, size):
-    #     self.font.setPointSize(size)
-    #     self.setFont(self.font)
-
-    def SizePolicyEz(self, h, v):
-        sizePolicy = self.sizePolicy()
-        sizePolicy.setHorizontalStretch(h)
-        sizePolicy.setVerticalStretch(v)
-        self.setSizePolicy(sizePolicy)
+    def setFontScale(self, scale):
+        self.fontScale = scale
 
     def resizeEvent(self, evt):
+        width = self.size().width() / len(self.text())
+        height = self.size().height()
         baseSize = 0
-        if self.size().width() > self.size().height():
-            baseSize = self.size().height()
+        if width > height:
+            baseSize = height
         else:
-            baseSize = self.size().width()
+            baseSize = width
             
-        self.font.setPixelSize(baseSize * 0.7)
+        self.font.setPixelSize(baseSize * self.fontScale)
         self.setFont(self.font)
 
 class ClockDisplay:
@@ -52,9 +48,13 @@ class ClockDisplay:
         self.date = QCustomLabel('')
         self.times = []
         self.forecastTimes = []
+        self.forecastTimesUnit = QCustomLabel('')
         self.forecastWeathers = []
+        self.forecastWeathersUnit = QCustomLabel('')
         self.forecastTemps = []
+        self.forecastTempssUnit = QCustomLabel('')
         self.forecastRains = []
+        self.forecastRainsUnit = QCustomLabel('')
         self.temp = QCustomLabel('')
         self.tempUnit = QCustomLabel('')
         self.hum = QCustomLabel('')
@@ -68,87 +68,87 @@ class ClockDisplay:
 
     def initializeDisplayItems(self):
         initTimes = ['23', ':', '45', '01']
-        # initTimesSize = [72, 48, 72, 18]
-        initForecastTimes = ['21', '0', '3', '6', '9', '12', '15', '時']
-        initForecastWeathers = ['☁', '☀', '☀', '☁', '☁/☂', '☂', '⛆', '天気']
-        # initForecastWeathersSize = [26, 26, 26, 26, 11, 26, 26, 12]
-        initForecastTemps = ['16', '12', '10', '12', '16', '20', '20', '℃']
-        initForecastRains = ['0', '0', '0', '0', '2', '2', '6', '雨量']
+        initForecastTimes = ['21', '0', '3', '6', '9', '12', '15']
+        initForecastWeathers = ['☁', '☀', '☀', '☁', '☁/☂', '☂', '☔']
+        initForecastTemps = ['16', '12', '10', '12', '16', '20', '20']
+        initForecastRains = ['0', '0', '0', '0', '2', '2', '6']
 
         self.date.setText('2018/5/16 (水)')
-        # self.date.setFontSize(24)
-        self.date.SizePolicyEz(4, 1)
 
         for i in range(0, 4):
             self.times.append(QCustomLabel(''))
             self.times[-1].setText(initTimes[i])
-            # self.times[-1].setFontSize(initTimesSize[i])
-            self.times[-1].SizePolicyEz(3, 2)
+            self.times[-1].setFontScale(1.3)
 
-        self.times[3].setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignBottom)
+        self.times[3].setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom)
 
-        for i in range(0, 8):
+        for i in range(0, 7):
             self.forecastTimes.append(QCustomLabel(''))
             self.forecastTimes[-1].setText(initForecastTimes[i])
+            self.forecastTimes[-1].setFontScale(0.7)
 
             self.forecastWeathers.append(QCustomLabel(''))
             self.forecastWeathers[-1].setText(initForecastWeathers[i])
-            # self.forecastWeathers[-1].setFontSize(initForecastWeathersSize[i])
-            # if i != 7:
-            self.forecastWeathers[-1].SizePolicyEz(1, 2)
 
             self.forecastTemps.append(QCustomLabel(str(i)))
             self.forecastTemps[-1].setText(initForecastTemps[i])
+            self.forecastTemps[-1].setFontScale(0.7)
 
             self.forecastRains.append(QCustomLabel(''))
             self.forecastRains[-1].setText(initForecastRains[i])
+            self.forecastRains[-1].setFontScale(0.7)
+
+        self.forecastTimesUnit.setText('時')
+        self.forecastTimesUnit.setFontScale(0.7)
+        self.forecastWeathersUnit.setText('天気')
+        self.forecastWeathersUnit.setFontScale(0.7)
+        self.forecastTempssUnit.setText('℃')
+        self.forecastTempssUnit.setFontScale(0.7)
+        self.forecastRainsUnit.setText('mm')
+        self.forecastRainsUnit.setFontScale(0.7)
 
         self.temp.setText('22')
-        # self.temp.setFontSize(28)
-        self.temp.SizePolicyEz(2, 2)
 
         self.tempUnit.setText('℃')
-        # self.tempUnit.setFontSize(20)
 
         self.hum.setText('38')
-        # self.hum.setFontSize(28)
-        self.hum.SizePolicyEz(2, 2)
 
         self.humUnit.setText('%')
-        # self.humUnit.setFontSize(20)
 
         self.pres.setText('1011')
-        # self.pres.setFontSize(20)
-        self.pres.SizePolicyEz(2, 1)
 
         self.presUnit.setText('hPa')
-        # self.presUnit.setFontSize(11)
 
     def initializeDisplayLayout(self, layout):
         # addWidget(obj, row-pos, col-pos, row-span, col-span)
-        layout.addWidget(self.date, 0, 0, 1, 8)
+        layout.addWidget(self.date, 0, 0, 1, 15)
 
-        layout.addWidget(self.times[0], 1, 0, 2, 3)
-        layout.addWidget(self.times[1], 1, 3, 2, 1)
-        layout.addWidget(self.times[2], 1, 4, 2, 3)
-        layout.addWidget(self.times[3], 1, 7, 2, 1)
+        layout.addWidget(self.times[0], 1, 0, 3, 6)
+        layout.addWidget(self.times[1], 1, 6, 3, 2)
+        layout.addWidget(self.times[2], 1, 8, 3, 6)
+        layout.addWidget(self.times[3], 1, 14, 3, 1)
 
-        for i in range(0, 8):
-            layout.addWidget(self.forecastTimes[i], 3, i)
-            layout.addWidget(self.forecastWeathers[i], 4, i)
-            layout.addWidget(self.forecastTemps[i], 5, i)
-            layout.addWidget(self.forecastRains[i], 6, i)
+        for i in range(0, 7):
+            layout.addWidget(self.forecastTimes[i], 4, i * 2, 1, 2)
+            layout.addWidget(self.forecastWeathers[i], 5, i * 2, 2, 2)
+            layout.addWidget(self.forecastTemps[i], 7, i * 2, 1, 2)
+            layout.addWidget(self.forecastRains[i], 8, i * 2, 1, 2)
 
-        layout.addWidget(self.temp, 1, 8)
-        layout.addWidget(self.tempUnit, 1, 9)
-        layout.addWidget(self.hum, 2, 8)
-        layout.addWidget(self.humUnit, 2, 9)
-        layout.addWidget(self.pres, 3, 8, 2, 1)
-        layout.addWidget(self.presUnit, 3, 9, 2, 1)
+        layout.addWidget(self.forecastTimesUnit, 4, 14)
+        layout.addWidget(self.forecastWeathersUnit, 5, 14, 2, 1)
+        layout.addWidget(self.forecastTempssUnit, 7, 14)
+        layout.addWidget(self.forecastRainsUnit, 8, 14)
+
+        layout.addWidget(self.temp, 1, 15, 2, 2)
+        layout.addWidget(self.tempUnit, 1, 17, 2, 1)
+        layout.addWidget(self.hum, 3, 15, 2, 2)
+        layout.addWidget(self.humUnit, 3, 17, 2, 1)
+        layout.addWidget(self.pres, 5, 15, 2, 2)
+        layout.addWidget(self.presUnit, 5, 17, 2, 1)
 
         # fill empty grid
-        layout.addWidget(QLabel(), 0, 8, 1, 2)
-        layout.addWidget(QLabel(), 5, 8, 2, 2)
+        layout.addWidget(QLabel(), 0, 15, 1, 3)
+        layout.addWidget(QLabel(), 7, 15, 2, 3)
 
     # del setViewMode(self):
 
@@ -181,7 +181,7 @@ if __name__ == '__main__':
     layout.setHorizontalSpacing(1)
     layout.setVerticalSpacing(1)
 
-    styleNight = 'QWidget{background-color:#7b8e72;} QLabel{color:#DCF7C9; background-color:#262626;}'
+    styleNight = 'QWidget{background-color:#407b8e72;} QLabel{color:#DCF7C9; background-color:#262626;}'
     # styleDay = 'QWidget{background-color:#7b8e72;} QLabel{color:#262626; background-color:#F3F9F1;}'
     app.setStyleSheet(styleNight)
 
@@ -195,5 +195,6 @@ if __name__ == '__main__':
     timer.timeout.connect(dispItems.onTimer)
     timer.start(200)
 
+    window.resize(800, 480)
     window.show()
     sys.exit(app.exec_())
