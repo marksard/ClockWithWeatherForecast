@@ -15,7 +15,7 @@ dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
 API_KEY = os.environ.get("API_KEY")
-API_URL = "http://API_URL.openweathermap.org/data/2.5/forecast?zip={zip}&units=metric&APPID={key}"
+API_URL = "http://api.openweathermap.org/data/2.5/forecast?zip={zip}&units=metric&APPID={key}"
 
 def getWeatherForecast():
     url = API_URL.format(zip = '537-0003,JP', key = API_KEY)
@@ -32,6 +32,7 @@ def getWeatherForecast():
         if 'rain' in entry and '3h' in entry['rain']:
             w_rain = entry['rain']['3h']
         result.append([w_datetime, w_weather, w_weather_desc, w_temp, w_rain])
-        print('日時:{0} 天気:{1}({4}) 気温:{2} 雨量(mm):{3}'.format(w_datetime, w_weather, w_temp, w_rain, w_weather_desc))
+        # print('日時:{0} 天気:{1}({4}) 気温:{2} 雨量(mm):{3}'.format(w_datetime, w_weather, w_temp, w_rain, w_weather_desc))
 
     return result
+
