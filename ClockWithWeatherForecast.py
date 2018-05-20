@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QGridLayout, QLa
 
 import sys
 import datetime
+import weatherinfo
 
 USE_BME = False
 
@@ -24,7 +25,7 @@ class QCustomLabel(QLabel):
 
         self.setFont(self.font)
         self.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
-        self.setContentsMargins(-5, -5, -5, -5)
+        self.setContentsMargins(-2, -2, -2, -2)
         self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.fontScale = 1.0
 
@@ -44,7 +45,17 @@ class QCustomLabel(QLabel):
         self.setFont(self.font)
 
 class ClockDisplay:
-    def __init__(self):
+    def __init__(self, app):
+        self.WEATHER_ICON = {
+            'clear sky': '☀',
+            'scattered clouds': '☀>☁',
+            'few clouds': '☀<☁',
+            'overcast clouds': '☁',
+            'light rain': '☂',
+            'moderate rain': '☔',
+            'heavy intensity rain': '☔',
+            }
+        self.app = app
         self.date = QCustomLabel('')
         self.times = []
         self.forecastTimes = []
@@ -61,6 +72,11 @@ class ClockDisplay:
         self.humUnit = QCustomLabel('')
         self.pres = QCustomLabel('')
         self.presUnit = QCustomLabel('')
+        self.sec1_count = 1
+        self.sec10_count = 1
+        self.sec60_count = 1
+        self.halfhour_count = 0
+        self.halfhour_count2 = 0
 
         if USE_BME == True:
             self.bme = bme280()
@@ -69,7 +85,7 @@ class ClockDisplay:
     def initializeDisplayItems(self):
         initTimes = ['23', ':', '45', '01']
         initForecastTimes = ['21', '0', '3', '6', '9', '12', '15']
-        initForecastWeathers = ['☁', '☀', '☀', '☁', '☁/☂', '☂', '☔']
+        initForecastWeathers = ['☁', '☀', '☀', '☁', '☂', '☂', '☔']
         initForecastTemps = ['16', '12', '10', '12', '16', '20', '20']
         initForecastRains = ['0', '0', '0', '0', '2', '2', '6']
 
@@ -78,7 +94,7 @@ class ClockDisplay:
         for i in range(0, 4):
             self.times.append(QCustomLabel(''))
             self.times[-1].setText(initTimes[i])
-            self.times[-1].setFontScale(1.3)
+            self.times[-1].setFontScale(1.2)
 
         self.times[3].setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom)
 
@@ -152,12 +168,77 @@ class ClockDisplay:
 
     # del setViewMode(self):
 
+    def setNightMode(self):
+        styleNight = 'QWidget{background-color:#407b8e72;} QLabel{color:#DCF7C9; background-color:#262626;}'
+        app.setStyleSheet(styleNight)
+
+    def setDayMode(self):
+        styleDay = 'QWidget{background-color:#7b8e72;} QLabel{color:#262626; background-color:#F3F9F1;}'
+        app.setStyleSheet(styleDay)
+
+    def updateWeather(self):
+        weathers = weatherinfo.getWeatherForecast()
+        for i in range(0, 7):
+            self.forecastTimes[i].setNum(weathers[i][0].hour)
+            if weathers[i][2] in self.WEATHER_ICON:
+                self.forecastWeathers[i].setText(self.WEATHER_ICON[weathers[i][2]])
+                self.forecastWeathers[i].resizeEvent(NotImplementedError)
+            self.forecastTemps[i].setText('{:.1f}'.format(weathers[i][3]))
+            self.forecastRains[i].setText('{:.1f}'.format(weathers[i][4]))
+
     def onTimer(self):
         now = datetime.datetime.today()
-        self.date.setText(now.strftime('%Y/%m/%d %a'))
-        self.times[0].setText(now.strftime('%H'))
-        self.times[2].setText(now.strftime('%M'))
-        self.times[3].setText(now.strftime('%S'))
+
+        self.sec1_count -= 1
+        if self.sec1_count == 0:
+            self.sec1_count = 5
+            self.sec10_count -= 1
+            self.sec60_count -= 1
+
+            self.date.setText(now.strftime('%Y/%m/%d %a'))
+            self.times[0].setText(now.strftime('%H'))
+            self.times[2].setText(now.strftime('%M'))
+            self.times[3].setText(now.strftime('%S'))
+
+            if (now.minute == 25 or now.minute == 55) and self.sec60_count == 0:
+                self.halfhour_count -= 1
+
+            if (now.minute == 30 or now.minute == 0) and self.sec60_count == 0:
+                self.halfhour_count2 -= 1
+
+            if now.hour == 6 and now.minute == 0 and self.sec60_count == 0:
+                self.setDayMode()
+
+            if now.hour == 18 and now.minute == 0 and self.sec60_count == 0:
+                self.setNightMode()
+
+        if self.sec10_count == 0:
+            self.sec10_count = 10
+            if USE_BME == True:
+                bmeStatuses = self.bme.getStatus()
+                self.temp.setText(bmeStatuses[0])
+                self.hum.setText(bmeStatuses[1])
+                self.pres.setText(bmeStatuses[2])
+
+            # if sec60_count == 0:
+            #     sec60_count = 60
+            #     update_ntp_status_thread()
+
+            if self.halfhour_count <= 0:
+                self.halfhour_count = 1
+                # update_speedtest_thread()
+                self.updateWeather()
+
+            # if halfhour_count2 == 0:
+            #     halfhour_count2 = 1
+            #     update_write_csv()
+
+
+        # now = datetime.datetime.today()
+        # self.date.setText(now.strftime('%Y/%m/%d %a'))
+        # self.times[0].setText(now.strftime('%H'))
+        # self.times[2].setText(now.strftime('%M'))
+        # self.times[3].setText(now.strftime('%S'))
 
         # if now.hour >= 18 and viewMode == False:
         #     self.viewMode = True
@@ -166,11 +247,6 @@ class ClockDisplay:
         #     self.viewMode = False
         #     setViewMode(False)
 
-        if USE_BME == True:
-            bmeStatuses = self.bme.getStatus()
-            self.temp.setText(bmeStatuses[0])
-            self.hum.setText(bmeStatuses[1])
-            self.pres.setText(bmeStatuses[2])
 
 
 if __name__ == '__main__':
@@ -181,19 +257,22 @@ if __name__ == '__main__':
     layout.setHorizontalSpacing(1)
     layout.setVerticalSpacing(1)
 
-    styleNight = 'QWidget{background-color:#407b8e72;} QLabel{color:#DCF7C9; background-color:#262626;}'
-    # styleDay = 'QWidget{background-color:#7b8e72;} QLabel{color:#262626; background-color:#F3F9F1;}'
-    app.setStyleSheet(styleNight)
-
-    dispItems = ClockDisplay()
+    dispItems = ClockDisplay(app)
     dispItems.initializeDisplayItems()
     dispItems.initializeDisplayLayout(layout)
 
-    window.setLayout(layout)
+    now = datetime.datetime.today()
+
+    if now.hour >= 18:
+        dispItems.setNightMode()
+    elif now.hour >= 6:
+        dispItems.setDayMode()
 
     timer = QTimer()
     timer.timeout.connect(dispItems.onTimer)
     timer.start(200)
+
+    window.setLayout(layout)
 
     window.resize(800, 480)
     window.show()
