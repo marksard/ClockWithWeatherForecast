@@ -24,7 +24,7 @@ def getWeatherForecast():
 
     result = []
     for entry in data['list']:
-        w_datetime = timezone('Asia/Tokyo').localize(datetime.datetime.utcfromtimestamp(entry['dt']))
+        w_datetime = timezone('Asia/Tokyo').localize(datetime.datetime.fromtimestamp(entry['dt']))
         w_weather = entry['weather'][0]['main']
         w_weather_desc = entry['weather'][0]['description']
         w_temp = entry['main']['temp']
