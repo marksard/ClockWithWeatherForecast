@@ -4,7 +4,7 @@
 from PyQt5 import QtCore
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QGridLayout, QLabel, QSizePolicy
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QGridLayout, QLabel, QPushButton, QSizePolicy
 
 import sys
 import datetime
@@ -45,7 +45,7 @@ class QCustomLabel(QLabel):
         self.setFont(self.font)
 
 class ClockDisplay:
-    def __init__(self, app):
+    def __init__(self, app, window):
         self.WEATHER_ICON = {
             'clear sky': '☀',
             'scattered clouds': '☀>☁',
@@ -56,6 +56,7 @@ class ClockDisplay:
             'heavy intensity rain': '☔',
             }
         self.app = app
+        self.window = window
         self.date = QCustomLabel('')
         self.times = []
         self.forecastTimes = []
@@ -77,6 +78,8 @@ class ClockDisplay:
         self.sec60_count = 1
         self.halfhour_count = 0
         self.halfhour_count2 = 0
+        self.fullMode = False
+        self.bme = object
 
         if USE_BME == True:
             self.bme = bme280()
@@ -162,18 +165,28 @@ class ClockDisplay:
         layout.addWidget(self.pres, 5, 15, 2, 2)
         layout.addWidget(self.presUnit, 5, 17, 2, 1)
 
+        screenChangeButton = QPushButton() 
+        screenChangeButton.clicked.connect(self.changeScreenMode)
         # fill empty grid
-        layout.addWidget(QLabel(), 0, 15, 1, 3)
+        layout.addWidget(screenChangeButton, 0, 15, 1, 3)
         layout.addWidget(QLabel(), 7, 15, 2, 3)
 
     # del setViewMode(self):
 
+    def changeScreenMode(self):
+        if self.fullMode == True:
+            self.fullMode = False
+            self.window.showNormal()
+        else:
+            self.fullMode = True
+            self.window.showFullScreen()
+
     def setNightMode(self):
-        styleNight = 'QWidget{background-color:#407b8e72;} QLabel{color:#DCF7C9; background-color:#262626;}'
+        styleNight = 'QWidget{background-color:#407b8e72;} QLabel, QPushButton{color:#DCF7C9; background-color:#262626;}'
         app.setStyleSheet(styleNight)
 
     def setDayMode(self):
-        styleDay = 'QWidget{background-color:#7b8e72;} QLabel{color:#262626; background-color:#F3F9F1;}'
+        styleDay = 'QWidget{background-color:#7b8e72;} QLabel, QPushButton{color:#262626; background-color:#F3F9F1;}'
         app.setStyleSheet(styleDay)
 
     def updateWeather(self):
@@ -257,7 +270,7 @@ if __name__ == '__main__':
     layout.setHorizontalSpacing(1)
     layout.setVerticalSpacing(1)
 
-    dispItems = ClockDisplay(app)
+    dispItems = ClockDisplay(app, window)
     dispItems.initializeDisplayItems()
     dispItems.initializeDisplayLayout(layout)
 
