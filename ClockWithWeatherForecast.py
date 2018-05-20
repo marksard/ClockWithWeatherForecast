@@ -189,15 +189,27 @@ class ClockDisplay:
         styleDay = 'QWidget{background-color:#7b8e72;} QLabel, QPushButton{color:#262626; background-color:#F3F9F1;}'
         app.setStyleSheet(styleDay)
 
-    def updateWeather(self):
+    def updateWeather(self, day, hour):
         weathers = weatherinfo.getWeatherForecast()
-        for i in range(0, 7):
-            self.forecastTimes[i].setNum(weathers[i][0].hour)
-            if weathers[i][2] in self.WEATHER_ICON:
-                self.forecastWeathers[i].setText(self.WEATHER_ICON[weathers[i][2]])
-                self.forecastWeathers[i].resizeEvent(NotImplementedError)
-            self.forecastTemps[i].setText('{:.1f}'.format(weathers[i][3]))
-            self.forecastRains[i].setText('{:.1f}'.format(weathers[i][4]))
+        findStartHour = False
+        i = 0
+        for weather in weathers:
+            if findStartHour == False:
+                if day == weather[0].day and hour - 3 <= weather[0].hour:
+                    print(weather[0].hour)
+                    findStartHour = True
+
+            if findStartHour == True:
+                self.forecastTimes[i].setNum(weather[0].hour)
+                if weather[2] in self.WEATHER_ICON:
+                    self.forecastWeathers[i].setText(self.WEATHER_ICON[weather[2]])
+                    self.forecastWeathers[i].resizeEvent(NotImplementedError)
+                self.forecastTemps[i].setText('{:.1f}'.format(weather[3]))
+                self.forecastRains[i].setText('{:.1f}'.format(weather[4]))
+                print(weather[0].hour)
+                if i >= 6:
+                    return
+                i += 1
 
     def onTimer(self):
         now = datetime.datetime.today()
@@ -240,7 +252,7 @@ class ClockDisplay:
             if self.halfhour_count <= 0:
                 self.halfhour_count = 1
                 # update_speedtest_thread()
-                self.updateWeather()
+                self.updateWeather(now.day, now.hour)
 
             # if halfhour_count2 == 0:
             #     halfhour_count2 = 1
