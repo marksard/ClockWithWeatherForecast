@@ -20,7 +20,7 @@ class QCustomLabel(QLabel):
     def __init__(self, text):
         super(QCustomLabel, self).__init__(text)
 
-        self.font = QFont('源ノ角ゴシック Code JP H', 11)
+        self.font = QFont('Source Han Code JP M', 11)
         # self.font = QFont('Digital-7', 11)
 
         self.setFont(self.font)
@@ -48,9 +48,10 @@ class ClockDisplay:
     def __init__(self, app, window):
         self.WEATHER_ICON = {
             'clear sky': '☀',
-            'scattered clouds': '☀>☁',
-            'few clouds': '☀<☁',
+            'scattered clouds': '☀',
+            'few clouds': '☀>☁',
             'overcast clouds': '☁',
+            'broken clouds': '☀',
             'light rain': '☂',
             'moderate rain': '☔',
             'heavy intensity rain': '☔',
@@ -93,38 +94,39 @@ class ClockDisplay:
         initForecastRains = ['0', '0', '0', '0', '2', '2', '6']
 
         self.date.setText('2018/5/16 (水)')
+        self.date.setFontScale(1.1)
 
         for i in range(0, 4):
             self.times.append(QCustomLabel(''))
             self.times[-1].setText(initTimes[i])
-            self.times[-1].setFontScale(1.2)
+            self.times[-1].setFontScale(1.1)
 
         self.times[3].setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom)
 
         for i in range(0, 7):
             self.forecastTimes.append(QCustomLabel(''))
             self.forecastTimes[-1].setText(initForecastTimes[i])
-            self.forecastTimes[-1].setFontScale(0.7)
+            self.forecastTimes[-1].setFontScale(0.5)
 
             self.forecastWeathers.append(QCustomLabel(''))
             self.forecastWeathers[-1].setText(initForecastWeathers[i])
 
             self.forecastTemps.append(QCustomLabel(str(i)))
             self.forecastTemps[-1].setText(initForecastTemps[i])
-            self.forecastTemps[-1].setFontScale(0.7)
+            self.forecastTemps[-1].setFontScale(0.9)
 
             self.forecastRains.append(QCustomLabel(''))
             self.forecastRains[-1].setText(initForecastRains[i])
-            self.forecastRains[-1].setFontScale(0.7)
+            self.forecastRains[-1].setFontScale(0.8)
 
         self.forecastTimesUnit.setText('時')
-        self.forecastTimesUnit.setFontScale(0.7)
+        self.forecastTimesUnit.setFontScale(0.8)
         self.forecastWeathersUnit.setText('天気')
-        self.forecastWeathersUnit.setFontScale(0.7)
+        self.forecastWeathersUnit.setFontScale(0.8)
         self.forecastTempssUnit.setText('℃')
-        self.forecastTempssUnit.setFontScale(0.7)
+        self.forecastTempssUnit.setFontScale(0.8)
         self.forecastRainsUnit.setText('mm')
-        self.forecastRainsUnit.setFontScale(0.7)
+        self.forecastRainsUnit.setFontScale(0.8)
 
         self.temp.setText('22')
 
@@ -196,8 +198,8 @@ class ClockDisplay:
             if weathers[i][2] in self.WEATHER_ICON:
                 self.forecastWeathers[i].setText(self.WEATHER_ICON[weathers[i][2]])
                 self.forecastWeathers[i].resizeEvent(NotImplementedError)
-            self.forecastTemps[i].setText('{:.1f}'.format(weathers[i][3]))
-            self.forecastRains[i].setText('{:.1f}'.format(weathers[i][4]))
+            self.forecastTemps[i].setText('{:.0f}'.format(weathers[i][3]))
+            self.forecastRains[i].setText('{:.0f}'.format(weathers[i][4]))
 
     def onTimer(self):
         now = datetime.datetime.today()
