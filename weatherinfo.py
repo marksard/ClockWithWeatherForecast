@@ -24,7 +24,7 @@ def getWeatherForecast():
 
     result = []
     for entry in data['list']:
-        w_datetime = datetime.datetime.utcfromtimestamp(entry['dt'])
+        w_datetime = timezone('Asia/Tokyo').localize(datetime.datetime.utcfromtimestamp(entry['dt']))
         w_weather = entry['weather'][0]['main']
         w_weather_desc = entry['weather'][0]['description']
         w_temp = entry['main']['temp']
@@ -32,7 +32,7 @@ def getWeatherForecast():
         if 'rain' in entry and '3h' in entry['rain']:
             w_rain = entry['rain']['3h']
         result.append([w_datetime, w_weather, w_weather_desc, w_temp, w_rain])
-        # print('日時:{0} 天気:{1}({4}) 気温:{2} 雨量(mm):{3}'.format(w_datetime, w_weather, w_temp, w_rain, w_weather_desc))
+        print('日時:{0} 天気:{1}({4}) 気温:{2} 雨量(mm):{3}'.format(w_datetime, w_weather, w_temp, w_rain, w_weather_desc))
 
     return result
 
