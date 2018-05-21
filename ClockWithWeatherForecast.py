@@ -19,10 +19,10 @@ if USE_BME == True:
 class QCustomLabel(QLabel):
     def __init__(self, text):
         super(QCustomLabel, self).__init__(text)
-        self.font = QFont('Source Han Code JP M', 11)
+        self.font = QFont('Source Han Code JP N', 11)
         self.setFont(self.font)
         self.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
-        self.setContentsMargins(-2, -2, -2, -2)
+        self.setContentsMargins(-5, -5, -5, -5)
         self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.fontScale = 1.0
 
@@ -180,10 +180,10 @@ class ClockDisplay:
     def changeScreenMode(self):
         if self._fullMode == True:
             self._fullMode = False
-            self.window.showNormal()
+            self._window.showNormal()
         else:
             self._fullMode = True
-            self.window.showFullScreen()
+            self._window.showFullScreen()
 
     def setNightMode(self):
         styleNight = 'QWidget{background-color:#407b8e72;} QLabel, QPushButton{color:#DCF7C9; background-color:#262626;}'
@@ -234,11 +234,11 @@ class ClockDisplay:
             if (now.minute == 30 or now.minute == 0) and self._60SecCount == 0:
                 self._halfHourCount2 -= 1
 
-            if now.hour == 6 and now.minute == 0 and now.second == 0:
-                self.setDayMode()
+            # if now.hour == 6 and now.minute == 0 and now.second == 0:
+            #     self.setDayMode()
 
-            if now.hour == 18 and now.minute == 0 and now.second == 0:
-                self.setNightMode()
+            # if now.hour == 18 and now.minute == 0 and now.second == 0:
+            #     self.setNightMode()
 
         if self._10SecCount == 0:
             self._10SecCount = 10
@@ -291,11 +291,12 @@ if __name__ == '__main__':
     timer.timeout.connect(dispItems.onTimer)
     timer.start(200)
 
-    now = datetime.datetime.today()
-    if now.hour >= 18:
-        dispItems.setNightMode()
-    elif now.hour >= 6:
-        dispItems.setDayMode()
+    # now = datetime.datetime.today()
+    # if now.hour >= 18:
+    #     dispItems.setNightMode()
+    # elif now.hour >= 6:
+    #     dispItems.setDayMode()
+    dispItems.setNightMode()
 
     window.setLayout(layout)
     window.resize(300, 200)
