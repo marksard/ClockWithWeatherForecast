@@ -19,12 +19,17 @@ if USE_BME == True:
 class QCustomLabel(QLabel):
     def __init__(self, text):
         super(QCustomLabel, self).__init__(text)
-        self.font = QFont('Source Han Code JP N', 11)
+        self.font = QFont('Source Han Code JP Medium', 11)
+        self.font.insertSubstitutions('Source Han Code JP Medium', [
+                                      'Source Han Code JP N', '源ノ角ゴシック Code JP M', '源ノ角ゴシック Code JP N'])
         self.setFont(self.font)
         self.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
         self.setContentsMargins(-3, -3, -3, -3)
         self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.fontScale = 1.0
+
+    def setFontFamily(self, face):
+        self.font.setFamily(face)
 
     def setFontScale(self, scale):
         self.fontScale = scale
@@ -43,44 +48,28 @@ class QCustomLabel(QLabel):
 
 
 class ClockDisplay:
-    WEATHER_ICON_DAY = {
-        'clear sky': '☀',
-        'few clouds': '☀☁',
-        'scattered clouds': '☀☁',
-        'broken clouds': '☁',
-        'overcast clouds': '☁',
-        'light rain': '☂',
-        'moderate rain': '☔',
-        'heavy intensity rain': '☔',
-        'thunderstorm with light rain': '⚡☂',
-        'thunderstorm with rain': '⚡☔',
-        'thunderstorm with heavy rain': '⚡☔',
-        'light snow': '☃',
-        'snow': '☃',
-        'heavy snow': '☃',
+    WEATHER_ICON = {
+        2: 'P',
+        3: 'X',
+        5: 'R',
+        6: 'W',
+        800: 'B',
+        801: 'B',
+        802: 'H',
+        803: 'N',
+        804: 'Y',
     }
 
-    WEATHER_ICON_NIGHT = {
-        'clear sky': '☽',
-        'few clouds': '☽☁',
-        'scattered clouds': '☽☁',
-        'broken clouds': '☁',
-        'overcast clouds': '☁',
-        'light rain': '☂',
-        'moderate rain': '☔',
-        'heavy intensity rain': '☔',
-        'thunderstorm with light rain': '⚡☂',
-        'thunderstorm with rain': '⚡☔',
-        'thunderstorm with heavy rain': '⚡☔',
-        'light snow': '☃',
-        'snow': '☃',
-        'heavy snow': '☃',
+    WEATHER_ICON_MOON = {
+        800: 'C',
+        801: 'C',
+        802: 'I',
     }
 
     def __init__(self, app, window):
         self._app = app
         self._window = window
-        self._labelDate = QCustomLabel('initializing...')
+        self._labelDate = QCustomLabel('initializing')
         self._labelTimes = []
         self._labelForecastTimes = []
         self._labelForecastWeathers = []
@@ -128,6 +117,7 @@ class ClockDisplay:
             self._labelForecastTemps.append(QCustomLabel(' '))
             self._labelForecastRains.append(QCustomLabel(' '))
             self._labelForecastTimes[-1].setFontScale(0.5)
+            self._labelForecastWeathers[-1].setFontFamily('Meteocons')
             self._labelForecastTemps[-1].setFontScale(0.9)
             self._labelForecastRains[-1].setFontScale(0.8)
 
@@ -192,17 +182,22 @@ class ClockDisplay:
         for i in range(0, 7):
             if len(weathers) > i:
                 hour = weathers[i][0].hour
-                icons = ClockDisplay.WEATHER_ICON_NIGHT
-                if hour >= 6 and hour <= 15:
-                    icons = ClockDisplay.WEATHER_ICON_DAY
-
                 self._labelForecastTimes[i].setNum(hour)
 
-                if weathers[i][1] in icons:
+                weatherId = weathers[i][1]
+                weatherIdOther = int(weatherId / 100)
+                icons = ClockDisplay.WEATHER_ICON
+                if hour >= 6 and hour <= 15 and weatherId in ClockDisplay.WEATHER_ICON_MOON:
+                    icons = ClockDisplay.WEATHER_ICON_MOON
+
+                if weatherId in icons:
+                    self._labelForecastWeathers[i].setText(icons[weatherId])
+                elif weatherIdOther in icons:
                     self._labelForecastWeathers[i].setText(
-                        icons[weathers[i][1]])
+                        icons[weatherIdOther])
                 else:
                     self._labelForecastWeathers[i].setText('-')
+
                 self._labelForecastWeathers[i].resizeEvent(None)
 
                 self._labelForecastTemps[i].setText(
@@ -280,6 +275,7 @@ if __name__ == '__main__':
     layout.setVerticalSpacing(1)
 
     dispItems = ClockDisplay(app, window)
+    dispItems.setNightMode()
     dispItems.initializeDisplayItems()
     dispItems.initializeDisplayLayout(layout)
 
@@ -292,7 +288,6 @@ if __name__ == '__main__':
     #     dispItems.setNightMode()
     # elif now.hour >= 6:
     #     dispItems.setDayMode()
-    dispItems.setNightMode()
 
     window.setLayout(layout)
     window.resize(300, 200)

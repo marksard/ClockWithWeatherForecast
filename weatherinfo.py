@@ -30,15 +30,16 @@ def getWeatherForecast():
     for item in forecastData['list']:
         forecastDatetime = timezone(
             'Asia/Tokyo').localize(datetime.datetime.fromtimestamp(item['dt']))
+        weatherId = item['weather'][0]['id']
         weatherDescription = item['weather'][0]['description']
         temperature = item['main']['temp']
         rainfall = 0
         if 'rain' in item and '3h' in item['rain']:
             rainfall = item['rain']['3h']
         result.append(
-            [forecastDatetime, weatherDescription, temperature, rainfall])
-        print('日時:{0} 天気:{1} 気温(℃):{2} 雨量(mm):{3}'.format(
-            forecastDatetime, weatherDescription, temperature, rainfall))
+            [forecastDatetime, weatherId, temperature, rainfall])
+        print('日時:{0} 天気:({1}){2} 気温(℃):{3} 雨量(mm):{4}'.format(
+            forecastDatetime, weatherId, weatherDescription, temperature, rainfall))
 
     return result
 
