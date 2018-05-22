@@ -22,7 +22,7 @@ class QCustomLabel(QLabel):
         self.font = QFont('Source Han Code JP N', 11)
         self.setFont(self.font)
         self.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
-        self.setContentsMargins(-5, -5, -5, -5)
+        self.setContentsMargins(-3, -3, -3, -3)
         self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.fontScale = 1.0
 
@@ -80,15 +80,15 @@ class ClockDisplay:
     def __init__(self, app, window):
         self._app = app
         self._window = window
-        self._labelDate = QCustomLabel('2018/5/16 (水)')
+        self._labelDate = QCustomLabel('initializing...')
         self._labelTimes = []
         self._labelForecastTimes = []
         self._labelForecastWeathers = []
         self._labelForecastTemps = []
         self._labelForecastRains = []
-        self._labelTemperature = QCustomLabel('22')
-        self._labelHumidity = QCustomLabel('38')
-        self._labelPressure = QCustomLabel('1011')
+        self._labelTemperature = QCustomLabel('  ')
+        self._labelHumidity = QCustomLabel('  ')
+        self._labelPressure = QCustomLabel('   ')
 
         self._labelForecastTimesUnit = QCustomLabel('時')
         self._labelForecastWeathersUnit = QCustomLabel('天気')
@@ -111,28 +111,22 @@ class ClockDisplay:
             self._bme.initialize()
 
     def initializeDisplayItems(self):
-        initTimes = ['23', ':', '45', '01']
-        initForecastTimes = ['21', '0', '3', '6', '9', '12', '15']
-        initForecastWeathers = ['☁', '☀', '☀', '☁', '☂', '☂', '☔']
-        initForecastTemps = ['16', '12', '10', '12', '16', '20', '20']
-        initForecastRains = ['0', '0', '0', '0', '2', '2', '6']
+        initTimes = ['  ', ':', '  ', '  ']
 
         self._labelDate.setFontScale(1.1)
 
         for i in range(0, 4):
-            self._labelTimes.append(QCustomLabel(''))
-            self._labelTimes[-1].setText(initTimes[i])
+            self._labelTimes.append(QCustomLabel(initTimes[i]))
             self._labelTimes[-1].setFontScale(1.1)
 
         self._labelTimes[3].setAlignment(
             QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom)
 
         for i in range(0, 7):
-            self._labelForecastTimes.append(QCustomLabel(initForecastTimes[i]))
-            self._labelForecastWeathers.append(
-                QCustomLabel(initForecastWeathers[i]))
-            self._labelForecastTemps.append(QCustomLabel(initForecastTemps[i]))
-            self._labelForecastRains.append(QCustomLabel(initForecastRains[i]))
+            self._labelForecastTimes.append(QCustomLabel(' '))
+            self._labelForecastWeathers.append(QCustomLabel(' '))
+            self._labelForecastTemps.append(QCustomLabel(' '))
+            self._labelForecastRains.append(QCustomLabel(' '))
             self._labelForecastTimes[-1].setFontScale(0.5)
             self._labelForecastTemps[-1].setFontScale(0.9)
             self._labelForecastRains[-1].setFontScale(0.8)
@@ -189,9 +183,9 @@ class ClockDisplay:
         styleNight = 'QWidget{background-color:#407b8e72;} QLabel, QPushButton{color:#DCF7C9; background-color:#262626;}'
         self._app.setStyleSheet(styleNight)
 
-    def setDayMode(self):
-        styleDay = 'QWidget{background-color:#7b8e72;} QLabel, QPushButton{color:#262626; background-color:#F3F9F1;}'
-        self._app.setStyleSheet(styleDay)
+    # def setDayMode(self):
+    #     styleDay = 'QWidget{background-color:#7b8e72;} QLabel, QPushButton{color:#262626; background-color:#F3F9F1;}'
+    #     self._app.setStyleSheet(styleDay)
 
     def updateWeather(self):
         weathers = weatherinfo.getWeatherForecast()
@@ -201,15 +195,16 @@ class ClockDisplay:
                 icons = ClockDisplay.WEATHER_ICON_NIGHT
                 if hour >= 6 and hour <= 15:
                     icons = ClockDisplay.WEATHER_ICON_DAY
+
                 self._labelForecastTimes[i].setNum(hour)
+
                 if weathers[i][1] in icons:
                     self._labelForecastWeathers[i].setText(
                         icons[weathers[i][1]])
-                    self._labelForecastWeathers[i].resizeEvent(None)
                 else:
                     self._labelForecastWeathers[i].setText('-')
-                    self._labelForecastWeathers[i].resizeEvent(None)
-                    
+                self._labelForecastWeathers[i].resizeEvent(None)
+
                 self._labelForecastTemps[i].setText(
                     '{:.0f}'.format(weathers[i][2]))
                 self._labelForecastRains[i].setText(
@@ -278,6 +273,7 @@ class ClockDisplay:
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = QWidget()
+
     layout = QGridLayout()
     layout.setContentsMargins(0, 0, 0, 0)
     layout.setHorizontalSpacing(1)
