@@ -238,13 +238,14 @@ class ClockDisplay:
                 self._labelHumidity.setText(bmeStatuses[1])
                 self._labelPressure.setText(bmeStatuses[2])
 
-            # if sec60_count == 0:
-            #     sec60_count = 60
+            if self._60SecCount == 0:
+                self._60SecCount = 60
             #     update_ntp_status_thread()
 
             if self._halfHourCount1 <= 0:
                 self._halfHourCount1 = 1
                 # update_speedtest_thread()
+                print(now)
                 self.updateWeather()
 
             # if _halfHourCount2 == 0:

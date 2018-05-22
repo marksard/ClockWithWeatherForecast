@@ -16,12 +16,12 @@ I2cCaribPress = []
 I2cCaribHumi = []
 I2cCaribFine = 0.0
 
-class bme280():
+class bme280:
     def __init__(self):
-        __initialize()
-        __calibration()
+        self.__initialize()
+        self.__calibration()
 
-    def __initialize():
+    def __initialize(self):
         osrs_t = 1  # Temperature oversampling x 1
         osrs_p = 1  # Pressure oversampling x 1
         osrs_h = 1  # Humidity oversampling x 1
@@ -34,12 +34,12 @@ class bme280():
         config_reg = (t_sb << 5) | (filter << 2) | spi3w_en
         ctrl_hum_reg = osrs_h
 
-        __writeDataI2C(0xF2, ctrl_hum_reg)
-        __writeDataI2C(0xF4, ctrl_meas_reg)
-        __writeDataI2C(0xF5, config_reg)
+        self.__writeDataI2C(0xF2, ctrl_hum_reg)
+        self.__writeDataI2C(0xF4, ctrl_meas_reg)
+        self.__writeDataI2C(0xF5, config_reg)
 
 
-    def __calibration():
+    def __calibration(self):
         calib = []
 
         for i in range(0x88, 0x88 + 24):
@@ -82,7 +82,7 @@ class bme280():
                 I2cCaribHumi[i] = (-I2cCaribHumi[i] ^ 0xFFFF) + 1
 
 
-    def getStatus():
+    def getStatus(self):
         data = []
         for i in range(0xF7, 0xF7 + 8):
             data.append(I2cBusInstance.read_byte_data(I2cAddress, i))
@@ -94,11 +94,11 @@ class bme280():
         return [__getTemperature(temp_raw), __getHumidity(hum_raw), __getPressure(pres_raw)]
 
 
-    def __writeDataI2C(reg_address, data):
+    def __writeDataI2C(self, reg_address, data):
         I2cBusInstance.write_byte_data(I2cAddress, reg_address, data)
 
 
-    def __getPressure(data):
+    def __getPressure(self, data):
         global I2cCaribFine
 
         v1 = (I2cCaribFine / 2.0) - 64000.0
@@ -127,7 +127,7 @@ class bme280():
         return str("%3.0f" % (pressure / 100))
 
 
-    def __getTemperature(data):
+    def __getTemperature(self, data):
         global I2cCaribFine
         v1 = (data / 16384.0 - I2cCaribTemp[0] / 1024.0) * I2cCaribTemp[1]
         v2 = (data / 131072.0 - I2cCaribTemp[0] / 8192.0) * (
@@ -137,7 +137,7 @@ class bme280():
         return str("%4.1f" % temperature)
 
 
-    def __getHumidity(data):
+    def __getHumidity(self, data):
         global I2cCaribFine
         var_h = I2cCaribFine - 76800.0
         if var_h != 0:
