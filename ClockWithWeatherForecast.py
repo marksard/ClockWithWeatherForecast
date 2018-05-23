@@ -48,6 +48,7 @@ class QCustomLabel(QLabel):
 
 
 class ClockDisplay:
+    # Convert from OpenWetherMap weather ID to Meteocons weather icon.
     WEATHER_ICON = {
         2: 'P',
         3: 'X',
@@ -99,34 +100,42 @@ class ClockDisplay:
             self._bme = bme280()
             self._bme.initialize()
 
-    def initializeDisplayItems(self):
+        self.setNightMode()
+        self.__initializeDisplayItems()
+        self.__initializeDisplayItemsScale()
+        self.__initializeDisplayLayout(layout)
+
+    def __initializeDisplayItems(self):
         initTimes = ['  ', ':', '  ', '  ']
-
-        self._labelDate.setFontScale(1.1)
-
         for i in range(0, 4):
             self._labelTimes.append(QCustomLabel(initTimes[i]))
-            self._labelTimes[-1].setFontScale(1.1)
-
-        self._labelTimes[3].setAlignment(
-            QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom)
 
         for i in range(0, 7):
             self._labelForecastTimes.append(QCustomLabel(' '))
             self._labelForecastWeathers.append(QCustomLabel(' '))
             self._labelForecastTemps.append(QCustomLabel(' '))
             self._labelForecastRains.append(QCustomLabel(' '))
-            self._labelForecastTimes[-1].setFontScale(0.5)
-            self._labelForecastWeathers[-1].setFontFamily('Meteocons')
-            self._labelForecastTemps[-1].setFontScale(0.9)
-            self._labelForecastRains[-1].setFontScale(0.8)
+
+    def __initializeDisplayItemsScale(self):
+        self._labelDate.setFontScale(1.1)
+
+        for i in range(0, 4):
+            self._labelTimes[i].setFontScale(1.1)
+        self._labelTimes[3].setAlignment(
+            QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom)
+
+        for i in range(0, 7):
+            self._labelForecastTimes[i].setFontScale(0.5)
+            self._labelForecastWeathers[i].setFontFamily('Meteocons')
+            self._labelForecastTemps[i].setFontScale(0.9)
+            self._labelForecastRains[i].setFontScale(0.8)
 
         self._labelForecastTimesUnit.setFontScale(0.8)
         self._labelForecastWeathersUnit.setFontScale(0.8)
         self._labelForecastTempsUnit.setFontScale(0.8)
         self._labelForecastRainsUnit.setFontScale(0.8)
 
-    def initializeDisplayLayout(self, layout):
+    def __initializeDisplayLayout(self, layout):
         # addWidget(obj, row-pos, col-pos, row-span, col-span)
         layout.addWidget(self._labelDate, 0, 0, 1, 15)
 
@@ -177,33 +186,48 @@ class ClockDisplay:
     #     styleDay = 'QWidget{background-color:#7b8e72;} QLabel, QPushButton{color:#262626; background-color:#F3F9F1;}'
     #     self._app.setStyleSheet(styleDay)
 
+    def updateClock(self, now):
+        self._labelDate.setText(now.strftime('%Y/%m/%d %a'))
+        self._labelTimes[0].setText(now.strftime('%H'))
+        self._labelTimes[2].setText(now.strftime('%M'))
+        self._labelTimes[3].setText(now.strftime('%S'))
+
+    def updateRoomInfo(self):
+        if USE_BME == True:
+            bmeStatuses = self._bme.getStatus()
+            self._labelTemperature.setText(bmeStatuses[0])
+            self._labelHumidity.setText(bmeStatuses[1])
+            self._labelPressure.setText(bmeStatuses[2])
+
     def updateWeather(self):
         weathers = weatherinfo.getWeatherForecast()
         for i in range(0, 7):
-            if len(weathers) > i:
-                hour = weathers[i][0].hour
-                self._labelForecastTimes[i].setNum(hour)
+            if len(weathers) <= i:
+                break
 
-                weatherId = weathers[i][1]
-                weatherIdOther = int(weatherId / 100)
-                icons = ClockDisplay.WEATHER_ICON
-                if hour >= 6 and hour <= 15 and weatherId in ClockDisplay.WEATHER_ICON_MOON:
-                    icons = ClockDisplay.WEATHER_ICON_MOON
+            hour = weathers[i][0].hour
+            self._labelForecastTimes[i].setNum(hour)
 
-                if weatherId in icons:
-                    self._labelForecastWeathers[i].setText(icons[weatherId])
-                elif weatherIdOther in icons:
-                    self._labelForecastWeathers[i].setText(
-                        icons[weatherIdOther])
-                else:
-                    self._labelForecastWeathers[i].setText('-')
+            weatherId = weathers[i][1]
+            weatherIdOther = int(weatherId / 100)
+            icons = ClockDisplay.WEATHER_ICON
+            if (hour < 6 or hour >= 18) and weatherId in ClockDisplay.WEATHER_ICON_MOON:
+                icons = ClockDisplay.WEATHER_ICON_MOON
 
-                self._labelForecastWeathers[i].resizeEvent(None)
+            if weatherId in icons:
+                self._labelForecastWeathers[i].setText(icons[weatherId])
+            elif weatherIdOther in icons:
+                self._labelForecastWeathers[i].setText(
+                    icons[weatherIdOther])
+            else:
+                self._labelForecastWeathers[i].setText('-')
 
-                self._labelForecastTemps[i].setText(
-                    '{:.0f}'.format(weathers[i][2]))
-                self._labelForecastRains[i].setText(
-                    '{:.0f}'.format(weathers[i][3]))
+            self._labelForecastWeathers[i].resizeEvent(None)
+
+            self._labelForecastTemps[i].setText(
+                '{:.0f}'.format(weathers[i][2]))
+            self._labelForecastRains[i].setText(
+                '{:.0f}'.format(weathers[i][3]))
 
     def onTimer(self):
         now = datetime.datetime.today()
@@ -213,10 +237,7 @@ class ClockDisplay:
             self._10SecCount -= 1
             self._60SecCount -= 1
 
-            self._labelDate.setText(now.strftime('%Y/%m/%d %a'))
-            self._labelTimes[0].setText(now.strftime('%H'))
-            self._labelTimes[2].setText(now.strftime('%M'))
-            self._labelTimes[3].setText(now.strftime('%S'))
+            self.updateClock(now)
 
             if (now.minute == 25 or now.minute == 55) and self._60SecCount == 0:
                 self._halfHourCount1 -= 1
@@ -230,17 +251,13 @@ class ClockDisplay:
             # if now.hour == 18 and now.minute == 0 and now.second == 0:
             #     self.setNightMode()
 
-        if self._10SecCount == 0:
-            self._10SecCount = 10
-            if USE_BME == True:
-                bmeStatuses = self._bme.getStatus()
-                self._labelTemperature.setText(bmeStatuses[0])
-                self._labelHumidity.setText(bmeStatuses[1])
-                self._labelPressure.setText(bmeStatuses[2])
+            if self._10SecCount == 0:
+                self._10SecCount = 10
+                self.updateRoomInfo()
 
             if self._60SecCount == 0:
                 self._60SecCount = 60
-            #     update_ntp_status_thread()
+                # update_ntp_status_thread()
 
             if self._halfHourCount1 <= 0:
                 self._halfHourCount1 = 1
@@ -248,22 +265,9 @@ class ClockDisplay:
                 print(now)
                 self.updateWeather()
 
-            # if _halfHourCount2 == 0:
-            #     _halfHourCount2 = 1
-            #     update_write_csv()
-
-        # now = datetime.datetime.today()
-        # self._labelDate.setText(now.strftime('%Y/%m/%d %a'))
-        # self._labelTimes[0].setText(now.strftime('%H'))
-        # self._labelTimes[2].setText(now.strftime('%M'))
-        # self._labelTimes[3].setText(now.strftime('%S'))
-
-        # if now.hour >= 18 and viewMode == False:
-        #     self.viewMode = True
-        #     setViewMode(True)
-        # elif now.hour >= 6 and view == True:
-        #     self.viewMode = False
-        #     setViewMode(False)
+            if self._halfHourCount2 == 0:
+                self._halfHourCount2 = 1
+                # update_write_csv()
 
 
 if __name__ == '__main__':
@@ -276,9 +280,6 @@ if __name__ == '__main__':
     layout.setVerticalSpacing(1)
 
     dispItems = ClockDisplay(app, window)
-    dispItems.setNightMode()
-    dispItems.initializeDisplayItems()
-    dispItems.initializeDisplayLayout(layout)
 
     timer = QTimer()
     timer.timeout.connect(dispItems.onTimer)
