@@ -91,7 +91,7 @@ class bme280:
         temp_raw = (data[3] << 12) | (data[4] << 4) | (data[5] >> 4)
         hum_raw = (data[6] << 8) | data[7]
 
-        return [__getTemperature(temp_raw), __getHumidity(hum_raw), __getPressure(pres_raw)]
+        return [self.__getTemperature(temp_raw), self.__getHumidity(hum_raw), self.__getPressure(pres_raw)]
 
 
     def __writeDataI2C(self, reg_address, data):

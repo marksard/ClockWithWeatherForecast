@@ -10,7 +10,7 @@ import sys
 import datetime
 import weatherinfo
 
-USE_BME = False
+USE_BME = True
 
 if USE_BME == True:
     from bme280 import bme280
@@ -98,7 +98,6 @@ class ClockDisplay:
 
         if USE_BME == True:
             self._bme = bme280()
-            self._bme.initialize()
 
         self.setNightMode()
         self.__initializeDisplayItems()

@@ -24,7 +24,7 @@ def getWeatherForecast():
 
     result = []
     if not ('list' in forecastData):
-        result.append([datetime.datetime.today(), 'clear sky', 40.2, 0.0])
+        result.append([datetime.datetime.today(), 800, 40.2, 0.0])
         return result
 
     for item in forecastData['list']:
