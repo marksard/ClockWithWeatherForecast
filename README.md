@@ -1,5 +1,7 @@
 # ClockWithWeatherForecast
 
+![img](/spec/example_displayed_in_raspberry_pie.jpg)
+
 ## Description
 
 It is an application of clock with weather forecast for PyQt5
