@@ -153,7 +153,7 @@ class ClockDisplay:
 
         for i in range(0, 7):
             layout.addWidget(self._labelForecastTimes[i], 4, i)
-            layout.addWidget(self._labelForecastWeathers[i], 5, i, 2 , 1)
+            layout.addWidget(self._labelForecastWeathers[i], 5, i, 2, 1)
             layout.addWidget(self._labelForecastTemps[i], 7, i)
             layout.addWidget(self._labelForecastRains[i], 8, i)
 
