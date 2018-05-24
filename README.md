@@ -30,3 +30,10 @@ pip install requests
 
 sudo apt install -y python3-smbus
 ```
+
+Default use fonts is below. But you can use your favorite fonts.
+
+* [source han code JP](https://github.com/adobe-fonts/source-han-code-jp)
+* [Meteocons](http://www.alessioatzeni.com/meteocons/)
+
+Thanks to everything!
