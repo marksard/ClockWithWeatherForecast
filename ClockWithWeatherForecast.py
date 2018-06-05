@@ -5,12 +5,15 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QGridLayout, QLabel, QPushButton, QSizePolicy
+from subprocess import Popen, PIPE
 
-import sys
 import datetime
+import sys
+import threading
 import weatherinfo
 
-USE_BME = True
+USE_SPDTST = False
+USE_BME = False
 
 if USE_BME == True:
     from bme280 import bme280
@@ -79,6 +82,9 @@ class ClockDisplay:
         self._labelTemperature = QCustomLabel('  ')
         self._labelHumidity = QCustomLabel('  ')
         self._labelPressure = QCustomLabel('   ')
+        self._labelUpload = QCustomLabel(' ')
+        self._labelDownload = QCustomLabel(' ')
+        self._labelPing = QCustomLabel(' ')
 
         self._labelForecastTimesUnit = QCustomLabel('時')
         self._labelForecastWeathersUnit = QCustomLabel('天気')
@@ -87,6 +93,9 @@ class ClockDisplay:
         self._labelTemperatureUnit = QCustomLabel('℃')
         self._labelHumidityUnit = QCustomLabel('%')
         self._labelPressureUnit = QCustomLabel('hPa')
+        self._labelUploadUnit = QCustomLabel('Mbps')
+        self._labelDownloadUnit = QCustomLabel('Mbps')
+        self._labelPingUnit = QCustomLabel('ms')
 
         self._1SecCount = 1
         self._10SecCount = 1
@@ -116,7 +125,7 @@ class ClockDisplay:
             self._labelForecastRains.append(QCustomLabel(' '))
 
     def __initializeDisplayItemsScale(self):
-        self._labelDate.setFontScale(1.2)
+        self._labelDate.setFontScale(1.3)
 
         for i in range(0, 4):
             self._labelTimes[i].setFontScale(1.5)
@@ -146,21 +155,21 @@ class ClockDisplay:
         # addWidget(obj, row-pos, col-pos, row-span, col-span)
         layout.addWidget(self._labelDate, 0, 0, 1, 8)
 
-        layout.addWidget(self._labelTimes[0], 1, 0, 3, 3)
-        layout.addWidget(self._labelTimes[1], 1, 3, 3, 1)
-        layout.addWidget(self._labelTimes[2], 1, 4, 3, 3)
-        layout.addWidget(self._labelTimes[3], 1, 7, 3, 1)
+        layout.addWidget(self._labelTimes[0], 1, 0, 4, 3)
+        layout.addWidget(self._labelTimes[1], 1, 3, 4, 1)
+        layout.addWidget(self._labelTimes[2], 1, 4, 4, 3)
+        layout.addWidget(self._labelTimes[3], 1, 7, 4, 1)
 
         for i in range(0, 7):
-            layout.addWidget(self._labelForecastTimes[i], 4, i)
-            layout.addWidget(self._labelForecastWeathers[i], 5, i, 2, 1)
-            layout.addWidget(self._labelForecastTemps[i], 7, i)
-            layout.addWidget(self._labelForecastRains[i], 8, i)
+            layout.addWidget(self._labelForecastTimes[i], 5, i)
+            layout.addWidget(self._labelForecastWeathers[i], 6, i, 2, 1)
+            layout.addWidget(self._labelForecastTemps[i], 8, i)
+            layout.addWidget(self._labelForecastRains[i], 9, i)
 
-        layout.addWidget(self._labelForecastTimesUnit, 4, 7)
-        layout.addWidget(self._labelForecastWeathersUnit, 5, 7, 2, 1)
-        layout.addWidget(self._labelForecastTempsUnit, 7, 7)
-        layout.addWidget(self._labelForecastRainsUnit, 8, 7)
+        layout.addWidget(self._labelForecastTimesUnit, 5, 7)
+        layout.addWidget(self._labelForecastWeathersUnit, 6, 7, 2, 1)
+        layout.addWidget(self._labelForecastTempsUnit, 8, 7)
+        layout.addWidget(self._labelForecastRainsUnit, 9, 7)
 
         layout.addWidget(self._labelTemperature, 1, 8, 2, 2)
         layout.addWidget(self._labelTemperatureUnit, 1, 10, 2, 1)
@@ -169,15 +178,22 @@ class ClockDisplay:
         layout.addWidget(self._labelPressure, 5, 8, 2, 2)
         layout.addWidget(self._labelPressureUnit, 5, 10, 2, 1)
 
+        layout.addWidget(self._labelUpload, 7, 8, 1, 2)
+        layout.addWidget(self._labelUploadUnit, 7, 10, 1, 1)
+        layout.addWidget(self._labelDownload, 8, 8, 1, 2)
+        layout.addWidget(self._labelDownloadUnit, 8, 10, 1, 1)
+        layout.addWidget(self._labelPing, 9, 8, 1, 2)
+        layout.addWidget(self._labelPingUnit, 9, 10, 1, 1)
+
         # Full screen change button
         screenChangeButton = QPushButton()
-        screenChangeButton.clicked.connect(self.changeScreenMode)
+        screenChangeButton.clicked.connect(self.__changeScreenMode)
         layout.addWidget(screenChangeButton, 0, 8, 1, 3)
 
         # Fill empty grid
-        layout.addWidget(QLabel(), 7, 8, 2, 3)
+        # layout.addWidget(QLabel(), 7, 8, 3, 3)
 
-    def changeScreenMode(self):
+    def __changeScreenMode(self):
         if self._fullMode == True:
             self._fullMode = False
             self._window.showNormal()
@@ -185,35 +201,27 @@ class ClockDisplay:
             self._fullMode = True
             self._window.showFullScreen()
 
-    def setNightMode(self):
-        styleNight = 'QWidget{background-color:#407b8e72;} QLabel, QPushButton{color:#DCF7C9; background-color:#000000;}'
-        self._app.setStyleSheet(styleNight)
-
-    # def setDayMode(self):
-    #     styleDay = 'QWidget{background-color:#7b8e72;} QLabel, QPushButton{color:#000000; background-color:#F3F9F1;}'
-    #     self._app.setStyleSheet(styleDay)
-
-    def updateClock(self, now):
+    def __updateClock(self, now):
         self._labelDate.setText(now.strftime('%Y/%m/%d %a'))
         self._labelTimes[0].setText(now.strftime('%H'))
         self._labelTimes[2].setText(now.strftime('%M'))
         self._labelTimes[3].setText(now.strftime('%S'))
 
-    def updateRoomInfo(self):
+    def __updateRoomInfo(self):
         if USE_BME == True:
             bmeStatuses = self._bme.getStatus()
             self._labelTemperature.setText(bmeStatuses[0])
             self._labelHumidity.setText(bmeStatuses[1])
             self._labelPressure.setText(bmeStatuses[2])
 
-    def updateWeather(self):
+    def __updateWeather(self):
         weathers = weatherinfo.getWeatherForecast()
         for i in range(0, 7):
             if len(weathers) <= i:
                 break
 
             hour = weathers[i][0].hour
-            self._labelForecastTimes[i].setText("{0:02d}".format(hour))
+            self._labelForecastTimes[i].setText("{0:1d}".format(hour))
 
             weatherId = weathers[i][1]
             weatherIdOther = int(weatherId / 100)
@@ -236,6 +244,44 @@ class ClockDisplay:
             self._labelForecastRains[i].setText(
                 '{:.0f}'.format(weathers[i][3]))
 
+    def __updateSpeedTest(self):
+        if USE_SPDTST == True:
+            thread = threading.Thread(target=self.__updateSpeedTestThread, name="updateSpeedTestThread")
+            thread.start()
+
+    def __updateSpeedTestThread(self):
+        download = ''
+        upload = ''
+        ping = ''
+        for line in self.__executeCommand('speedtest'):
+            if line.find('Upload: ') >= 0:
+                upload = float(line.split(' ')[1])
+            if line.find('Download: ') >= 0:
+                download = float(line.split(' ')[1])
+            if line.find(' ms') >= 0:
+                index1 = line.find(']: ') + 3
+                index2 = line.find(' ms')
+                ping = float(line[index1: index2])
+            
+        print('upload:{0:.1f} download:{1:.1f} ping:{2:.1f}'.format(upload, download, ping))
+        self._labelUpload[i].setText('{:.1f}'.format(upload))
+        self._labelDownload[i].setText('{:.1f}'.format(download))
+        self._labelPing[i].setText('{:.1f}'.format(ping))
+
+    def __executeCommand(self, cmd):
+        p = Popen(cmd.split(' '), stdout=PIPE, stderr=PIPE)
+        out, err = p.communicate()
+        out = out.decode('utf-8')
+        return [s for s in out.split('\n') if s]
+
+    def setNightMode(self):
+        styleNight = 'QWidget{background-color:#407b8e72;} QLabel, QPushButton{color:#DCF7C9; background-color:#111111;}'
+        self._app.setStyleSheet(styleNight)
+
+    # def setDayMode(self):
+    #     styleDay = 'QWidget{background-color:#7b8e72;} QLabel, QPushButton{color:#111111; background-color:#F3F9F1;}'
+    #     self._app.setStyleSheet(styleDay)
+
     def onTimer(self):
         now = datetime.datetime.today()
         self._1SecCount -= 1
@@ -244,7 +290,7 @@ class ClockDisplay:
             self._10SecCount -= 1
             self._60SecCount -= 1
 
-            self.updateClock(now)
+            self.__updateClock(now)
 
             if (now.minute == 25 or now.minute == 55) and self._60SecCount == 0:
                 self._halfHourCount1 -= 1
@@ -260,7 +306,7 @@ class ClockDisplay:
 
             if self._10SecCount == 0:
                 self._10SecCount = 10
-                self.updateRoomInfo()
+                self.__updateRoomInfo()
 
             if self._60SecCount == 0:
                 self._60SecCount = 60
@@ -270,7 +316,8 @@ class ClockDisplay:
                 self._halfHourCount1 = 1
                 # update_speedtest_thread()
                 print(now)
-                self.updateWeather()
+                self.__updateWeather()
+                self.__updateSpeedTest()
 
             if self._halfHourCount2 == 0:
                 self._halfHourCount2 = 1
