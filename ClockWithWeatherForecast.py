@@ -12,8 +12,8 @@ import sys
 import threading
 import weatherinfo
 
-USE_SPDTST = False
-USE_BME = False
+USE_SPDTST = True
+USE_BME = True
 
 if USE_BME == True:
     from bme280 import bme280
@@ -27,7 +27,7 @@ class QCustomLabel(QLabel):
                                       'Source Han Code JP N', '源ノ角ゴシック Code JP M', '源ノ角ゴシック Code JP N'])
         self.setFont(self.font)
         self.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
-        self.setContentsMargins(-3, -3, -3, -3)
+        self.setContentsMargins(-3, -1, -3, -1)
         self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.fontScale = 1.0
 
@@ -125,7 +125,7 @@ class ClockDisplay:
             self._labelForecastRains.append(QCustomLabel(' '))
 
     def __initializeDisplayItemsScale(self):
-        self._labelDate.setFontScale(1.3)
+        self._labelDate.setFontScale(1.2)
 
         for i in range(0, 4):
             self._labelTimes[i].setFontScale(1.5)
@@ -264,9 +264,9 @@ class ClockDisplay:
                 ping = float(line[index1: index2])
             
         print('upload:{0:.1f} download:{1:.1f} ping:{2:.1f}'.format(upload, download, ping))
-        self._labelUpload[i].setText('{:.1f}'.format(upload))
-        self._labelDownload[i].setText('{:.1f}'.format(download))
-        self._labelPing[i].setText('{:.1f}'.format(ping))
+        self._labelUpload.setText('{:.1f}'.format(upload))
+        self._labelDownload.setText('{:.1f}'.format(download))
+        self._labelPing.setText('{:.1f}'.format(ping))
 
     def __executeCommand(self, cmd):
         p = Popen(cmd.split(' '), stdout=PIPE, stderr=PIPE)
