@@ -290,7 +290,7 @@ class ClockDisplay:
     def __updateCpuInfoThread(self):
         self._valCpuUsage = psutil.cpu_percent()
         if USE_CPUTEMP == True:
-            for line in execute_command('vcgencmd measure_temp'):
+            for line in self.__executeCommand('vcgencmd measure_temp'):
                 self._valCpuTemp = line.replace("temp=", "")
         #print('CPU usage:{0:.2f}% temp:{1:.2f}'.format(self._valCpuUsage, self._valCpuTemp))
 
