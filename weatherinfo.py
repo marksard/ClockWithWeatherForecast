@@ -40,7 +40,7 @@ def getWeatherForecast():
             rainfall = item['rain']['3h']
         result.append(
             [forecastDatetime, weatherId, temperature, rainfall])
-        print('日時:{0} 天気:({1}){2} 気温(℃):{3} 雨量(mm):{4}'.format(
+        print('日時:{0} 天気:({1}){2} 気温(℃):{3} 雨量(mm):{4:.2f}'.format(
             forecastDatetime, weatherId, weatherDescription, temperature, rainfall))
 
     return result

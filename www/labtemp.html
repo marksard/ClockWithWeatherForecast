@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Laboratory information</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<!-- <script src="//code.highcharts.com/highcharts.js"></script> -->
+	<script src="https://code.highcharts.com/stock/highstock.js"></script>
+</head>
+
+<body style="background-color:#4CAF50;">
+	<div id="temp-cputmp" style="padding:4px;"></div>
+	<div id="hum-press" style="padding:4px;"></div>
+	<div id="down-up" style="padding:4px;"></div>
+	<div id="ping" style="padding:4px;"></div>
+
+	<script type="text/javascript">
+		function createArray(csvData) {
+			var result = new Object();
+			result.labTemp = [];
+			result.labHumidity = [];
+			result.labPressure = [];
+			result.cpuTemp = [];
+			result.labNetDownload = [];
+			result.labNetUpload = [];
+			result.labPing = [];
+
+			var readLines = csvData.split("\n");
+			for (var i = 0; i < readLines.length - 1; i++) {
+				var line = readLines[i].split(",")
+				var dayDateAllay = line[0].replace("'", '').replace("'", '').split(/[// :]/);
+				var date = new Date(dayDateAllay[0], dayDateAllay[1] - 1, dayDateAllay[2], dayDateAllay[3], dayDateAllay[4], dayDateAllay[5]);
+				result.labTemp[i] = [Number(date), Number(line[1])];
+				result.labHumidity[i] = [Number(date), Number(line[2])];
+				result.labPressure[i] = [Number(date), Number(line[3])];
+				result.cpuTemp[i] = [Number(date), Number(line[4])];
+				result.labNetDownload[i] = [Number(date), Number(line[5])];
+				result.labNetUpload[i] = [Number(date), Number(line[6])];
+				result.labPing[i] = [Number(date), Number(line[7])];
+			}
+
+			return result;
+		}
+
+		function getCSVFile() {
+			return new Promise(function (resolve) {
+				var xhr = new XMLHttpRequest();
+				xhr.onload = function () {
+					resolve(createArray(xhr.responseText));
+				};
+				xhr.open("get", "./roominfo.csv", true);
+				xhr.send(null);
+			});
+		}
+
+		function draw() {
+			var options_temp_cputmp = {
+				chart: { renderTo: 'temp-cputmp', zoomType: 'xy' },
+				title: { text: 'Lab Temperature and CPU Temp', floating: true },
+				xAxis: { title: null, type: 'datetime', scrollbar: { enabled: true } },
+				yAxis: [
+					{ title: { text: "Lab Temp('C)" } },
+					{ title: { text: "CPU Temp('C)" }, opposite: true, scrollbar: { enabled: true } }
+				],
+				credits: { enabled: false }
+			};
+			var options_hum_press = {
+				chart: { renderTo: 'hum-press', zoomType: 'xy' },
+				title: { text: 'Lab Atmospheric Pressure and Humidity', floating: true },
+				xAxis: { title: null, type: 'datetime', scrollbar: { enabled: true } },
+				yAxis: [
+					{ title: { text: "Humidity(%)" } },
+					{ title: { text: "Pressure(hpa)" }, opposite: true, scrollbar: { enabled: true } }
+				],
+				credits: { enabled: false }
+			};
+			var options_down_up = {
+				chart: { renderTo: 'down-up', zoomType: 'xy' },
+				title: { text: 'Lab Internet Speed Test', floating: true },
+				xAxis: { title: null, type: 'datetime', scrollbar: { enabled: true } },
+				yAxis: [
+					{ title: { text: "Download(Mbps)" } },
+					{ title: { text: "Upload(Mbps)" }, opposite: true, scrollbar: { enabled: true } }
+				],
+				credits: { enabled: false }
+			};
+			var options_ping = {
+				chart: { renderTo: 'ping', zoomType: 'xy' },
+				title: { text: 'Lab Internet Ping Test', floating: true },
+				xAxis: { title: null, type: 'datetime', scrollbar: { enabled: true } },
+				yAxis: { title: { text: "Ping(ms)" }, scrollbar: { enabled: true } },
+				credits: { enabled: false }
+			};
+
+			getCSVFile().then(function (csv) {
+				options_temp_cputmp['series'] = [
+					{ name: "Lab Temp('C)", data: csv.labTemp, color: '#CB4829', yAxis: 0 },
+					{ name: "CPU Temp('C)", data: csv.cpuTemp, color: '#DFD238', yAxis: 1 }
+				];
+				var chart1 = new Highcharts.Chart(options_temp_cputmp);
+				options_hum_press['series'] = [
+					{ name: "Humidity(%)", data: csv.labHumidity, color: '#009453', yAxis: 0 },
+					{ name: "Pressure(hpa)", data: csv.labPressure, color: '#0099CE', yAxis: 1 }
+				];
+				var chart2 = new Highcharts.Chart(options_hum_press);
+				options_down_up['series'] = [
+					{ name: "Download(Mbps)", data: csv.labNetDownload, color: '#423885', yAxis: 0 },
+					{ name: "Upload(Mbps)", data: csv.labNetUpload, color: '#CA4684', yAxis: 1 }
+				];
+				var chart3 = new Highcharts.Chart(options_down_up);
+				options_ping['series'] = [{ name: "Ping(ms)", data: csv.labPing, color: '#CA475C' }];
+				var chart4 = new Highcharts.Chart(options_ping);
+			});
+		};
+
+		document.body.onload = draw();
+	</script>
+</body>
+
+</html>

@@ -5,15 +5,19 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QGridLayout, QLabel, QPushButton, QSizePolicy
+from pytz import timezone
 from subprocess import Popen, PIPE
 
 import datetime
+import os
+import psutil
 import sys
 import threading
 import weatherinfo
 
+USE_CPUTEMP = False
 USE_SPDTST = True
-USE_BME = True
+USE_BME = False
 
 if USE_BME == True:
     from bme280 import bme280
@@ -101,9 +105,18 @@ class ClockDisplay:
         self._10SecCount = 1
         self._60SecCount = 1
         self._halfHourCount1 = 0
-        self._halfHourCount2 = 0
         self._fullMode = False
         self._bme = object
+
+        self._valDateTime = 0
+        self._valTemperature = 0
+        self._valHumidity = 0
+        self._valPressure = 0
+        self._valUpload = 0
+        self._valDownload = 0
+        self._valPing = 0
+        self._valCpuUsage = 0
+        self._valCpuTemp = 0
 
         if USE_BME == True:
             self._bme = bme280()
@@ -210,9 +223,12 @@ class ClockDisplay:
     def __updateRoomInfo(self):
         if USE_BME == True:
             bmeStatuses = self._bme.getStatus()
-            self._labelTemperature.setText(bmeStatuses[0])
-            self._labelHumidity.setText(bmeStatuses[1])
-            self._labelPressure.setText(bmeStatuses[2])
+            self._valTemperature = bmeStatuses[0]
+            self._valHumidity = bmeStatuses[1]
+            self._valPressure = bmeStatuses[2]
+            self._labelTemperature.setText(self._valTemperature)
+            self._labelHumidity.setText(self._valHumidity)
+            self._labelPressure.setText(self._valPressure)
 
     def __updateWeather(self):
         weathers = weatherinfo.getWeatherForecast()
@@ -250,23 +266,73 @@ class ClockDisplay:
             thread.start()
 
     def __updateSpeedTestThread(self):
-        download = ''
-        upload = ''
-        ping = ''
         for line in self.__executeCommand('speedtest'):
             if line.find('Upload: ') >= 0:
-                upload = float(line.split(' ')[1])
+                self._valUpload = float(line.split(' ')[1])
             if line.find('Download: ') >= 0:
-                download = float(line.split(' ')[1])
+                self._valDownload = float(line.split(' ')[1])
             if line.find(' ms') >= 0:
                 index1 = line.find(']: ') + 3
                 index2 = line.find(' ms')
-                ping = float(line[index1: index2])
+                self._valPing = float(line[index1: index2])
             
-        print('upload:{0:.1f} download:{1:.1f} ping:{2:.1f}'.format(upload, download, ping))
-        self._labelUpload.setText('{:.1f}'.format(upload))
-        self._labelDownload.setText('{:.1f}'.format(download))
-        self._labelPing.setText('{:.1f}'.format(ping))
+        print('upload:{0:.2f} download:{1:.2f} ping:{2:.2f}'.format(self._valUpload, self._valDownload, self._valPing))
+        self._labelUpload.setText('{:.1f}'.format(self._valUpload))
+        self._labelDownload.setText('{:.1f}'.format(self._valDownload))
+        self._labelPing.setText('{:.1f}'.format(self._valPing))
+
+        self.__writeCsvThread()
+
+    def __updateCpuInfo(self):
+        thread = threading.Thread(target=self.__updateCpuInfoThread, name="updateCpuInfoThread")
+        thread.start()
+
+    def __updateCpuInfoThread(self):
+        self._valCpuUsage = psutil.cpu_percent()
+        if USE_CPUTEMP == True:
+            for line in execute_command('vcgencmd measure_temp'):
+                self._valCpuTemp = line.replace("temp=", "")
+        #print('CPU usage:{0:.2f}% temp:{1:.2f}'.format(self._valCpuUsage, self._valCpuTemp))
+
+    # def __writeCsv(self):
+    #     thread = threading.Thread(target=self.__writeCsvThread, name="writeCsvThread")
+    #     thread.start()
+
+    def __writeCsvThread(self):
+        path = '/var/www/html/roominfo.csv'
+        if os.name == 'nt':
+            path = 'www/roominfo.csv'
+
+        fs = open(path, "at+")
+        fs.seek(0)
+        read = []
+        for line in fs.readlines():
+            read.append(line)
+        fs.close()
+
+        read.append(self.__getRoomInfoOneLine())
+
+        fs = open(path, "wt+")
+        fs.seek(0, 0)
+        for i, w in enumerate(read):
+            if len(read) > 24 * 2 * 7:
+                if i >= 1:
+                    fs.write(w)
+            else:
+                fs.write(w)
+        fs.close()
+
+        if os.name != 'nt':
+            mark = pwd.getpwnam('mark')
+            os.chown(path, mark.pw_uid, mark.pw_gid)
+            os.chmod(path, 0o766)
+
+    def __getRoomInfoOneLine(self):
+        return '{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}\n'.format(
+            self._valDateTime.strftime("%Y/%m/%d %H:%M:%S %z"),
+            self._valTemperature, self._valHumidity, self._valPressure,
+            self._valCpuTemp,
+            self._valUpload, self._valDownload, self._valPing)
 
     def __executeCommand(self, cmd):
         p = Popen(cmd.split(' '), stdout=PIPE, stderr=PIPE)
@@ -283,7 +349,8 @@ class ClockDisplay:
     #     self._app.setStyleSheet(styleDay)
 
     def onTimer(self):
-        now = datetime.datetime.today()
+        # now = datetime.datetime.today()
+        now = datetime.datetime.now(timezone('Asia/Tokyo'))
         self._1SecCount -= 1
         if self._1SecCount == 0:
             self._1SecCount = 5     # 200ms timer / 5 count = 1sec
@@ -295,9 +362,6 @@ class ClockDisplay:
             if (now.minute == 25 or now.minute == 55) and self._60SecCount == 0:
                 self._halfHourCount1 -= 1
 
-            if (now.minute == 30 or now.minute == 0) and self._60SecCount == 0:
-                self._halfHourCount2 -= 1
-
             # if now.hour == 6 and now.minute == 0 and now.second == 0:
             #     self.setDayMode()
 
@@ -307,6 +371,7 @@ class ClockDisplay:
             if self._10SecCount == 0:
                 self._10SecCount = 10
                 self.__updateRoomInfo()
+                self.__updateCpuInfo()
 
             if self._60SecCount == 0:
                 self._60SecCount = 60
@@ -314,14 +379,11 @@ class ClockDisplay:
 
             if self._halfHourCount1 <= 0:
                 self._halfHourCount1 = 1
-                # update_speedtest_thread()
-                print(now)
+                self._valDateTime = now
+                print('{0} -----------'.format(now))
                 self.__updateWeather()
                 self.__updateSpeedTest()
-
-            if self._halfHourCount2 == 0:
-                self._halfHourCount2 = 1
-                # update_write_csv()
+                print('------------------------')
 
 
 if __name__ == '__main__':
