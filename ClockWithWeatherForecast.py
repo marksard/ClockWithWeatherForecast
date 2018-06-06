@@ -291,7 +291,7 @@ class ClockDisplay:
         self._valCpuUsage = psutil.cpu_percent()
         if USE_CPUTEMP == True:
             for line in self.__executeCommand('vcgencmd measure_temp'):
-                self._valCpuTemp = line.replace("temp=", "")
+                self._valCpuTemp = float(line.replace("temp=", "").replace("'C", ""))
         #print('CPU usage:{0:.2f}% temp:{1:.2f}'.format(self._valCpuUsage, self._valCpuTemp))
 
     # def __writeCsv(self):
