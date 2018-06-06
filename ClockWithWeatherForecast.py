@@ -11,13 +11,14 @@ from subprocess import Popen, PIPE
 import datetime
 import os
 import psutil
+import pwd
 import sys
 import threading
 import weatherinfo
 
-USE_CPUTEMP = False
+USE_CPUTEMP = True
 USE_SPDTST = True
-USE_BME = False
+USE_BME = True
 
 if USE_BME == True:
     from bme280 import bme280
