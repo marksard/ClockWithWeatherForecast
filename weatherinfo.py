@@ -19,11 +19,17 @@ API_URL = "http://api.openweathermap.org/data/2.5/forecast?zip={zip}&units=metri
 
 
 def getWeatherForecast():
+    result = []
     url = API_URL.format(zip=ZIP, key=API_KEY)
-    response = requests.get(url)
+
+    try:
+        response = requests.get(url)
+    except requests.exceptions.RequestException as e:
+        print(e)
+        return result
+
     forecastData = json.loads(response.text)
 
-    result = []
     if not ('list' in forecastData):
         result.append([datetime.datetime.today(), 800, 40.2, 0.0])
         print('Error. Please check ZIP code or API_KEY.')

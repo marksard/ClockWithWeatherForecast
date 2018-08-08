@@ -11,7 +11,6 @@ from subprocess import Popen, PIPE
 import datetime
 import os
 import psutil
-import pwd
 import sys
 import threading
 import weatherinfo
@@ -20,9 +19,15 @@ USE_CPUTEMP = True
 USE_SPDTST = True
 USE_BME = True
 
+if os.name != 'nt':
+    import pwd
+else:
+    USE_CPUTEMP = False
+    USE_SPDTST = False
+    USE_BME = False
+
 if USE_BME == True:
     from bme280 import bme280
-
 
 class QCustomLabel(QLabel):
     def __init__(self, text):
