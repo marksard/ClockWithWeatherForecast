@@ -1,6 +1,9 @@
-#! /usr/bin/python3
-# -*- coding: utf-8 -*-
+# Name: OpenWeathermap reader
+# Author: marksard
+# Version: 1.0
+# Python 3.6 or later (maybe)
 
+# ***************************
 import json
 import datetime
 import os
@@ -11,14 +14,16 @@ from pytz import timezone
 from os.path import join, dirname
 from dotenv import load_dotenv
 
-load_dotenv(join(dirname(__file__), '.env'))
+# ***************************
+load_dotenv(join(dirname(__file__), '../.env'))
 
 API_KEY = os.environ.get("API_KEY")
 ZIP = os.environ.get("ZIP")
 API_URL = "https://api.openweathermap.org/data/2.5/forecast?zip={zip}&units=metric&APPID={key}"
 
 
-def getWeatherForecast():
+# ***************************
+def get_weather_forecast():
     url = API_URL.format(zip=ZIP, key=API_KEY)
     try:
         response = requests.get(url)
@@ -44,9 +49,7 @@ def getWeatherForecast():
             rainfall = item['rain']['3h']
         result.append(
             [forecastDatetime, weatherId, temperature, rainfall])
-        print('日時:{0} 天気:({1}){2} 気温(℃):{3} 雨量(mm):{4:.2f}'.format(
-            forecastDatetime, weatherId, weatherDescription, temperature, rainfall))
+        # print('日時:{0} 天気:({1}){2} 気温(℃):{3} 雨量(mm):{4:.2f}'.format(
+        #     forecastDatetime, weatherId, weatherDescription, temperature, rainfall))
 
     return result
-
-# getWeatherForecast()
