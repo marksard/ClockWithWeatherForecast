@@ -15,21 +15,19 @@ load_dotenv(join(dirname(__file__), '.env'))
 
 API_KEY = os.environ.get("API_KEY")
 ZIP = os.environ.get("ZIP")
-API_URL = "http://api.openweathermap.org/data/2.5/forecast?zip={zip}&units=metric&APPID={key}"
+API_URL = "https://api.openweathermap.org/data/2.5/forecast?zip={zip}&units=metric&APPID={key}"
 
 
 def getWeatherForecast():
-    result = []
     url = API_URL.format(zip=ZIP, key=API_KEY)
-
     try:
         response = requests.get(url)
-    except requests.exceptions.RequestException as e:
-        print(e)
-        return result
+    except:
+        return []
 
     forecastData = json.loads(response.text)
 
+    result = []
     if not ('list' in forecastData):
         result.append([datetime.datetime.today(), 800, 40.2, 0.0])
         print('Error. Please check ZIP code or API_KEY.')

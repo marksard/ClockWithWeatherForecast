@@ -94,6 +94,11 @@
 			};
 
 			getCSVFile().then(function (csv) {
+				Highcharts.setOptions({
+					global: {
+						useUTC: false
+					}
+				});
 				options_temp_cputmp['series'] = [
 					{ name: "Lab Temp('C)", data: csv.labTemp, color: '#CB4829', yAxis: 0 },
 					{ name: "CPU Temp('C)", data: csv.cpuTemp, color: '#DFD238', yAxis: 1 }
