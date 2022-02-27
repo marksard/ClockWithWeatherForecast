@@ -53,3 +53,9 @@ def get_weather_forecast():
         #     forecastDatetime, weatherId, weatherDescription, temperature, rainfall))
 
     return result
+
+# ***************************
+if __name__ == '__main__':
+    result = get_weather_forecast()
+    for item in result[0:7]:
+        print(f'日時:{item[0]} 天気:{item[1]} 気温(℃):{item[2]} 雨量(mm):{item[3]:.2f}')

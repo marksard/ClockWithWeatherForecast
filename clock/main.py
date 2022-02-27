@@ -80,22 +80,23 @@ class QCustomLabel2(QCustomLabel):
 # ***************************
 class ClockDisplay:
     # Convert from OpenWetherMap weather ID to Meteocons weather icon.
+    # weather ID 200/300/500/600 convert to 2/3/5/6
     WEATHER_ICON = {
-        2: 'P',
-        3: 'X',
-        5: 'R',
-        6: 'W',
-        800: 'B',
+        2: 'P', # 雷
+        3: 'X', # みぞれ
+        5: 'R', # 雨
+        6: 'W', # 雪
+        800: 'B', # 晴れ
         801: 'B',
-        802: 'H',
-        803: 'N',
-        804: 'Y',
+        802: 'H', # 晴れ時々曇り
+        803: 'N', # 曇り
+        804: 'Y', # 雲
     }
 
     WEATHER_ICON_MOON = {
-        800: 'C',
+        800: 'C', # 晴れ
         801: 'C',
-        802: 'I',
+        802: 'I', # 晴れ時々曇り
     }
 
     WEEK_NAMES = ['Mon.', 'Tue.', 'Wed.', 'Thu.', 'Fri.', 'Sat.', 'Sun.']
