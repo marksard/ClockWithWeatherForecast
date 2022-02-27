@@ -5,7 +5,7 @@
 
 # ***************************
 from PyQt5 import QtCore
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QSize
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QGridLayout, QLabel, QPushButton, QSizePolicy
 from pytz import timezone
@@ -18,6 +18,7 @@ import sys
 import threading
 import json
 import traceback
+import pandas as pd
 # import weatherinfo as forecast
 import weather_tenkijp as forecast
 
@@ -52,6 +53,7 @@ class QCustomLabel(QLabel):
         self.setContentsMargins(-3, -1, -3, -1)
         self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.fontScale = 1.0
+        self.callback = None
 
     def set_font_family(self, face) -> None:
         self.font.setFamily(face)
@@ -70,6 +72,12 @@ class QCustomLabel(QLabel):
 
         self.font.setPixelSize(baseSize * self.fontScale)
         self.setFont(self.font)
+
+        if self.callback is not None:
+            self.callback(self.size().width(), self.size().height())
+    
+    def set_callback(self, callback):
+        self.callback = callback
 
 # ***************************
 # 色変え用
@@ -149,6 +157,8 @@ class ClockDisplay:
         self.__valDownload = 0
         self.__valPing = 0
 
+        self.__weathers_cache = None
+
         self.__sphere = None
         if USE_BME == True:
             self.__sphere = bme280.BME280()
@@ -168,14 +178,18 @@ class ClockDisplay:
         self.__window.resize(300, 200)
         self.__window.show()
 
-        self.__update_weather()
+        self.__update_weather(use_cache=False)
         self.__update_speed_test()
         self.__update_room_info()
 
         sys.exit(self.__app.exec_())
 
     def __set_style(self) -> None:
-        styleNight = 'QWidget{background-color:#03161B;} .QCustomLabel{color:#83FDF4; background-color:#073642;} .QCustomLabel2, QPushButton{color:#7f83FDF4; background-color:#7f073642;}'
+        styleNight = """
+            QWidget{background-color:#03161B;} 
+            .QCustomLabel{color:#83FDF4; background-color:#073642;}
+            .QCustomLabel2, QPushButton{color:#7f83FDF4; background-color:#7f073642;}
+        """
         self.__app.setStyleSheet(styleNight)
         # styleNight = 'QWidget{background-color:#407b8e72;} QLabel, QPushButton{color:#DCF7C9; background-color:#111111;}'
         # self.__app.setStyleSheet(styleNight)
@@ -300,10 +314,15 @@ class ClockDisplay:
 
         # Full screen change button
         screenChangeButton = QPushButton()
-        screenChangeButton.setMinimumWidth(10)
-        screenChangeButton.setMinimumHeight(10)
         screenChangeButton.clicked.connect(self.__on_click)
-        self.__layout.addWidget(screenChangeButton, 4, 15, 1, 1)
+
+        # QButtonはレイアウトによるストレッチができなさそうなので近場の処理で無理やりサイズを変更する
+        def callback(w,h):
+            screenChangeButton.setMinimumWidth(w)
+            screenChangeButton.setMinimumHeight(h)
+        self.__labelForecastTempsUnit.set_callback(callback)
+        # self.__layout.addWidget(screenChangeButton, 4, 15, 1, 1)
+        self.__layout.addWidget(screenChangeButton, 0, 8, 1, 1)
 
     def __update_clock(self, now: datetime.datetime) -> None:
         week = self.WEEK_NAMES[now.weekday()]
@@ -322,19 +341,42 @@ class ClockDisplay:
             self.__labelHumidity.setText(self.__valHumidity)
             self.__labelPressure.setText(self.__valPressure)
 
-    def __update_weather(self) -> None:
+    def __update_weather(self, use_cache = False) -> None:
         if USE_WEATHER == False:
             return
 
-        weathers = forecast.get_weather_forecast()
+
+        if self.__weathers_cache is None:
+            if os.path.exists('weather_cache.csv'):
+                print(f'Cache use: {datetime.datetime.now()}')
+                cache = pd.read_csv('weather_cache.csv')
+                cache['hours'] = pd.to_datetime(cache['hours'])
+                data_check = cache[cache['hours'] > datetime.datetime.now()]
+                self.__weathers_cache = cache
+                if len(data_check) < 7:
+                    print(f'Cache is old. Get it from web: {datetime.datetime.now()}')
+                    self.__weathers_cache = forecast.get_weather_forecast()
+                    self.__weathers_cache.to_csv('weather_cache.csv')
+            else:
+                print(f'Cache is nothing. Get it from web: {datetime.datetime.now()}')
+                self.__weathers_cache = forecast.get_weather_forecast()
+                self.__weathers_cache.to_csv('weather_cache.csv')
+        elif use_cache == False:
+            print(f'Get it from web: {datetime.datetime.now()}')
+            self.__weathers_cache = forecast.get_weather_forecast()
+            self.__weathers_cache.to_csv('weather_cache.csv')
+
+        weathers = self.__weathers_cache.copy()
+        # 現時刻より前の過去データは除外
+        weathers = weathers[weathers['hours'] > datetime.datetime.now()]
         for i in range(0, 7):
             if len(weathers) <= i:
                 break
 
-            hour = weathers[i][0].hour
+            hour = weathers['hours'].iloc[i].hour
             self.__labelForecastTimes[i].setText("{0:2d}".format(hour))
 
-            weatherId = weathers[i][1]
+            weatherId = weathers['condition_ids'].iloc[i]
             weatherIdOther = int(weatherId / 100)
             icons = self.WEATHER_ICON
             if (hour < 6 or hour >= 18) and weatherId in self.WEATHER_ICON_MOON:
@@ -351,9 +393,9 @@ class ClockDisplay:
             self.__labelForecastWeathers[i].resizeEvent(None)
 
             self.__labelForecastTemps[i].setText(
-                '{:2.0f}'.format(weathers[i][2]))
+                '{:2.0f}'.format(weathers['temps'].iloc[i]))
             self.__labelForecastRains[i].setText(
-                '{:2.0f}'.format(weathers[i][3]))
+                '{:2.0f}'.format(weathers['mm_rains'].iloc[i]))
 
     def __update_speed_test(self) -> None:
         if USE_SPDTST == True:
@@ -398,9 +440,14 @@ class ClockDisplay:
 
         self.__update_clock(now)
 
-        if (now.minute == 25 or now.minute == 55) and now.second == 0:
-            self.__update_weather()
+        if (now.minute in [25, 55]) and now.second == 0:
             self.__update_speed_test()
+
+        if (now.hour in [0, 6, 12, 18]) and now.minute == 5 and now.second == 0:
+            self.__update_weather(use_cache=False)
+
+        if (now.hour % 3 == 0) and now.minute == 0 and now.second == 0:
+            self.__update_weather(use_cache=True)
 
         if now.second % 10 == 0:
             self.__update_room_info()

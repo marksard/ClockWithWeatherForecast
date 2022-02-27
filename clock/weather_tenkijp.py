@@ -1,5 +1,4 @@
 import datetime
-from tokenize import Ignore
 import urllib3
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -29,16 +28,18 @@ def get_weather_forecast():
     w_tommo['condition_ids'] = __weathers_2_condition_ids(w_tommo['weathers'])
 
     df = pd.DataFrame(w_today)
-    df = df.append(pd.DataFrame(w_tommo))
+    df = df.append(pd.DataFrame(w_tommo)).set_index('hours')
 
-    # 現時刻より前の過去データは除外
-    df = df[df['hours'] > datetime.datetime.now()]
+    return df
 
-    result = []
-    for index, item in df.iterrows():
-        result.append([item['hours'], item['condition_ids'], item['temps'], item['mm_rains']])
+    # # 現時刻より前の過去データは除外
+    # df = df[df['hours'] > datetime.datetime.now()]
 
-    return result
+    # result = []
+    # for index, item in df.iterrows():
+    #     result.append([item['hours'], item['condition_ids'], item['temps'], item['mm_rains']])
+
+    # return result
 
 def __get_forecast_point_3h(day):
     for item in day:
@@ -87,6 +88,12 @@ def __weathers_2_condition_ids(weathers):
 
 # ***************************
 if __name__ == '__main__':
-    result = get_weather_forecast()
-    for item in result[0:7]:
-        print(f'日時:{item[0]} 天気:{item[1]} 気温(℃):{item[2]} 雨量(mm):{item[3]:.2f}')
+    # result = get_weather_forecast()
+    # result.to_csv('weather_cache.csv')
+
+    df = pd.read_csv('weather_cache.csv')
+    df['hours'] = pd.to_datetime(df['hours'])
+    print(df)
+    # for i in range(0, 7):
+    #     hour = df['hours'].iloc[i].hour
+    #     print(df['temps'].iloc[i])
