@@ -18,7 +18,8 @@ import sys
 import threading
 import json
 import traceback
-import weatherinfo as weatherinfo
+# import weatherinfo as forecast
+import weather_tenkijp as forecast
 
 # ***************************
 USE_CPUTEMP = True
@@ -127,10 +128,14 @@ class ClockDisplay:
         self.__labelForecastTempsUnit = QCustomLabel2("'C")
         self.__labelForecastRainsUnit = QCustomLabel2('mm')
         self.__labelTemperatureUnit = QCustomLabel2("'C")
-        self.__labelHumidityUnit = QCustomLabel2('%')
+        self.__labelHumidityUnit = QCustomLabel2(' %')
         self.__labelPressureUnit = QCustomLabel2('hPa')
-        self.__labelUploadUnit = QCustomLabel2('U:Mbps')
-        self.__labelDownloadUnit = QCustomLabel2('D:Mbps')
+
+        self.__labelUploadLabel = QCustomLabel2('Up')
+        self.__labelUploadUnit = QCustomLabel2('Mbps')
+        self.__labelDownloadLabel = QCustomLabel2('Down')
+        self.__labelDownloadUnit = QCustomLabel2('Mbps')
+        self.__labelPingLabel = QCustomLabel2('Ping')
         self.__labelPingUnit = QCustomLabel2('ms')
 
         self.__last_time = datetime.datetime.min
@@ -176,7 +181,7 @@ class ClockDisplay:
         # self.__app.setStyleSheet(styleNight)
 
     def __initialize_display_items(self) -> None:
-        initTimes = ['  ', ':', '  ', '  ']
+        initTimes = ['  ', ':', '  ', ':','  ']
         for item in initTimes:
             if item == ':':
                 self.__labelTimes.append(QCustomLabel2(item))
@@ -190,77 +195,122 @@ class ClockDisplay:
             self.__labelForecastRains.append(QCustomLabel(' '))
 
     def __initialize_display_items_scale(self) -> None:
-        self.__labelDate.set_font_scale(1.2)
+        self.__labelDate.set_font_scale(1.7)
 
         for i in range(len(self.__labelTimes)):
-            self.__labelTimes[i].set_font_scale(1.5)
-        self.__labelTimes[3].setAlignment(
-            QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom)
+            self.__labelTimes[i].set_font_scale(1.7)
+        # self.__labelTimes[3].setAlignment(
+        #     QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom)
 
-        for i in range(0, 7):
-            self.__labelForecastTimes[i].set_font_scale(1.0)
+        for i in range(len(self.__labelForecastTimes)):
+            self.__labelForecastTimes[i].set_font_scale(1.4)
+            self.__labelForecastTemps[i].set_font_scale(1.4)
+            self.__labelForecastRains[i].set_font_scale(1.4)
             self.__labelForecastWeathers[i].set_font_family('Meteocons')
-            self.__labelForecastTemps[i].set_font_scale(1.0)
-            self.__labelForecastRains[i].set_font_scale(1.0)
 
         self.__labelForecastTimesUnit.set_font_scale(1.0)
         self.__labelForecastWeathersUnit.set_font_scale(1.0)
         self.__labelForecastTempsUnit.set_font_scale(1.0)
         self.__labelForecastRainsUnit.set_font_scale(1.0)
 
-        self.__labelTemperature.set_font_scale(1.4)
-        self.__labelHumidity.set_font_scale(1.4)
+        self.__labelTemperature.set_font_scale(1.3)
+        self.__labelHumidity.set_font_scale(0.7)
         self.__labelPressure.set_font_scale(1.4)
 
         self.__labelTemperatureUnit.set_font_scale(1.0)
         self.__labelHumidityUnit.set_font_scale(1.0)
-        self.__labelPressureUnit.set_font_scale(1.0)
+        self.__labelPressureUnit.set_font_scale(1.2)
+
+    # def __initialize_display_layout(self) -> None:
+    #     # addWidget(obj, row-pos, col-pos, row-span, col-span)
+    #     self.__layout.addWidget(self.__labelDate, 0, 0, 2, 8)
+
+    #     self.__layout.addWidget(self.__labelTimes[0], 2, 0, 4, 3)
+    #     self.__layout.addWidget(self.__labelTimes[1], 2, 3, 4, 1)
+    #     self.__layout.addWidget(self.__labelTimes[2], 2, 4, 4, 3)
+    #     self.__layout.addWidget(self.__labelTimes[3], 2, 7, 4, 1)
+
+    #     for i in range(0, 7):
+    #         self.__layout.addWidget(self.__labelForecastTimes[i], 6, i)
+    #         self.__layout.addWidget(self.__labelForecastWeathers[i], 7, i, 2, 1)
+    #         self.__layout.addWidget(self.__labelForecastTemps[i], 9, i)
+    #         self.__layout.addWidget(self.__labelForecastRains[i], 10, i)
+
+    #     self.__layout.addWidget(self.__labelForecastTimesUnit, 6, 7)
+    #     self.__layout.addWidget(self.__labelForecastWeathersUnit, 7, 7, 2, 1)
+    #     self.__layout.addWidget(self.__labelForecastTempsUnit, 9, 7)
+    #     self.__layout.addWidget(self.__labelForecastRainsUnit, 10, 7)
+
+    #     self.__layout.addWidget(self.__labelTemperature, 2, 8, 2, 2)
+    #     self.__layout.addWidget(self.__labelTemperatureUnit, 2, 10, 2, 1)
+    #     self.__layout.addWidget(self.__labelHumidity, 4, 8, 2, 2)
+    #     self.__layout.addWidget(self.__labelHumidityUnit, 4, 10, 2, 1)
+    #     self.__layout.addWidget(self.__labelPressure, 6, 8, 2, 2)
+    #     self.__layout.addWidget(self.__labelPressureUnit, 6, 10, 2, 1)
+
+    #     self.__layout.addWidget(self.__labelUpload, 8, 8, 1, 2)
+    #     self.__layout.addWidget(self.__labelUploadUnit, 8, 10, 1, 1)
+    #     self.__layout.addWidget(self.__labelDownload, 9, 8, 1, 2)
+    #     self.__layout.addWidget(self.__labelDownloadUnit, 9, 10, 1, 1)
+    #     self.__layout.addWidget(self.__labelPing, 10, 8, 1, 2)
+    #     self.__layout.addWidget(self.__labelPingUnit, 10, 10, 1, 1)
+
+    #     # Full screen change button
+    #     screenChangeButton = QPushButton()
+    #     screenChangeButton.clicked.connect(self.__on_click)
+    #     self.__layout.addWidget(screenChangeButton, 0, 10, 2, 1)
 
     def __initialize_display_layout(self) -> None:
         # addWidget(obj, row-pos, col-pos, row-span, col-span)
-        self.__layout.addWidget(self.__labelDate, 0, 0, 2, 8)
+        self.__layout.addWidget(self.__labelDate, 0, 0, 1, 8)
 
-        self.__layout.addWidget(self.__labelTimes[0], 2, 0, 4, 3)
-        self.__layout.addWidget(self.__labelTimes[1], 2, 3, 4, 1)
-        self.__layout.addWidget(self.__labelTimes[2], 2, 4, 4, 3)
-        self.__layout.addWidget(self.__labelTimes[3], 2, 7, 4, 1)
+        self.__layout.addWidget(self.__labelTimes[0], 1, 0, 2, 2)
+        self.__layout.addWidget(self.__labelTimes[1], 1, 2, 2, 1)
+        self.__layout.addWidget(self.__labelTimes[2], 1, 3, 2, 2)
+        self.__layout.addWidget(self.__labelTimes[3], 1, 5, 2, 1)
+        self.__layout.addWidget(self.__labelTimes[4], 1, 6, 2, 2)
 
-        for i in range(0, 7):
-            self.__layout.addWidget(self.__labelForecastTimes[i], 6, i)
-            self.__layout.addWidget(self.__labelForecastWeathers[i], 7, i, 2, 1)
-            self.__layout.addWidget(self.__labelForecastTemps[i], 9, i)
-            self.__layout.addWidget(self.__labelForecastRains[i], 10, i)
+        for i in range(7):
+            self.__layout.addWidget(self.__labelForecastTimes[i], 0, i + 9)
+            self.__layout.addWidget(self.__labelForecastTemps[i], 1, i + 9)
+            self.__layout.addWidget(self.__labelForecastRains[i], 2, i + 9)
+            self.__layout.addWidget(self.__labelForecastWeathers[i], 3, i + 9)
 
-        self.__layout.addWidget(self.__labelForecastTimesUnit, 6, 7)
-        self.__layout.addWidget(self.__labelForecastWeathersUnit, 7, 7, 2, 1)
-        self.__layout.addWidget(self.__labelForecastTempsUnit, 9, 7)
-        self.__layout.addWidget(self.__labelForecastRainsUnit, 10, 7)
+        self.__layout.addWidget(self.__labelForecastTimesUnit, 0, 8)
+        self.__layout.addWidget(self.__labelForecastTempsUnit, 1, 8)
+        self.__layout.addWidget(self.__labelForecastRainsUnit, 2, 8)
+        self.__layout.addWidget(self.__labelForecastWeathersUnit, 3, 8)
 
-        self.__layout.addWidget(self.__labelTemperature, 2, 8, 2, 2)
-        self.__layout.addWidget(self.__labelTemperatureUnit, 2, 10, 2, 1)
-        self.__layout.addWidget(self.__labelHumidity, 4, 8, 2, 2)
-        self.__layout.addWidget(self.__labelHumidityUnit, 4, 10, 2, 1)
-        self.__layout.addWidget(self.__labelPressure, 6, 8, 2, 2)
-        self.__layout.addWidget(self.__labelPressureUnit, 6, 10, 2, 1)
+        self.__layout.addWidget(self.__labelTemperature, 3, 0, 1, 2)
+        self.__layout.addWidget(self.__labelTemperatureUnit, 3, 2)
+        self.__layout.addWidget(self.__labelHumidity, 3, 3, 1, 2)
+        self.__layout.addWidget(self.__labelHumidityUnit, 3, 5)
+        self.__layout.addWidget(self.__labelPressure, 3, 6, 1, 2)
+        self.__layout.addWidget(self.__labelPressureUnit, 3, 8)
 
-        self.__layout.addWidget(self.__labelUpload, 8, 8, 1, 2)
-        self.__layout.addWidget(self.__labelUploadUnit, 8, 10, 1, 1)
-        self.__layout.addWidget(self.__labelDownload, 9, 8, 1, 2)
-        self.__layout.addWidget(self.__labelDownloadUnit, 9, 10, 1, 1)
-        self.__layout.addWidget(self.__labelPing, 10, 8, 1, 2)
-        self.__layout.addWidget(self.__labelPingUnit, 10, 10, 1, 1)
+        self.__layout.addWidget(self.__labelUploadLabel, 4, 0)
+        self.__layout.addWidget(self.__labelUpload, 4, 1, 1, 3)
+        self.__layout.addWidget(self.__labelUploadUnit, 4, 4)
+        self.__layout.addWidget(self.__labelDownloadLabel, 4, 5)
+        self.__layout.addWidget(self.__labelDownload, 4, 6, 1, 3)
+        self.__layout.addWidget(self.__labelDownloadUnit, 4, 9)
+        self.__layout.addWidget(self.__labelPingLabel, 4, 10)
+        self.__layout.addWidget(self.__labelPing, 4, 11, 1, 3)
+        self.__layout.addWidget(self.__labelPingUnit, 4, 14)
 
         # Full screen change button
         screenChangeButton = QPushButton()
+        screenChangeButton.setMinimumWidth(10)
+        screenChangeButton.setMinimumHeight(10)
         screenChangeButton.clicked.connect(self.__on_click)
-        self.__layout.addWidget(screenChangeButton, 0, 10, 2, 1)
+        self.__layout.addWidget(screenChangeButton, 4, 15, 1, 1)
 
     def __update_clock(self, now: datetime.datetime) -> None:
         week = self.WEEK_NAMES[now.weekday()]
         self.__labelDate.setText(f'{now.strftime("%Y / %m / %d")}  {week}')
         self.__labelTimes[0].setText(now.strftime('%H'))
         self.__labelTimes[2].setText(now.strftime('%M'))
-        self.__labelTimes[3].setText(now.strftime('%S'))
+        self.__labelTimes[4].setText(now.strftime('%S'))
 
     def __update_room_info(self) -> None:
         if USE_BME == True:
@@ -276,13 +326,13 @@ class ClockDisplay:
         if USE_WEATHER == False:
             return
 
-        weathers = weatherinfo.get_weather_forecast()
+        weathers = forecast.get_weather_forecast()
         for i in range(0, 7):
             if len(weathers) <= i:
                 break
 
             hour = weathers[i][0].hour
-            self.__labelForecastTimes[i].setText("{0:1d}".format(hour))
+            self.__labelForecastTimes[i].setText("{0:2d}".format(hour))
 
             weatherId = weathers[i][1]
             weatherIdOther = int(weatherId / 100)
@@ -301,9 +351,9 @@ class ClockDisplay:
             self.__labelForecastWeathers[i].resizeEvent(None)
 
             self.__labelForecastTemps[i].setText(
-                '{:.0f}'.format(weathers[i][2]))
+                '{:2.0f}'.format(weathers[i][2]))
             self.__labelForecastRains[i].setText(
-                '{:.0f}'.format(weathers[i][3]))
+                '{:2.0f}'.format(weathers[i][3]))
 
     def __update_speed_test(self) -> None:
         if USE_SPDTST == True:
